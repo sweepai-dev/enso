@@ -18,6 +18,7 @@ import project.Semantic.Python_Interop_Spec
 import project.Semantic.R_Interop_Spec
 
 import project.Data.Array_Spec
+import project.Data.Complex_Spec
 import project.Data.Interval_Spec
 import project.Data.Json_Spec
 import project.Data.List_Spec
@@ -53,6 +54,7 @@ main = Test.Suite.run_main <|
     Array_Spec.spec
     Case_Spec.spec
     Conversion_Spec.spec
+    Complex_Spec.spec
     Deep_Export_Spec.spec
     Error_Spec.spec
     Examples_Spec.spec
