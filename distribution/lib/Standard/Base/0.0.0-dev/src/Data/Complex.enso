@@ -28,12 +28,12 @@ type Complex
     ## Gets the argument of the complex number
 
       > Example
-        The following has an absolute value of 5:
+        The following has an argument value of -pi / 2:
 
-          Complex 3 4 . absolute
+          Complex 0 -1 . argument
 
-    absolute : Number
-    absolute = (this.real * this.real + this.imaginary * this.imaginary) . sqrt
+    argument : Number
+    argument = this.imaginary.atan_2 this.real
 
     ## Gets the Complex Conjugate
 
