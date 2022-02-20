@@ -1,9 +1,39 @@
 from Standard.Base import all
 
+## Functions
+    - ^
+    - sqrt
+    - cos
+    - sin
+    - tan
+    - acos
+    - asin
+    - atan
+    - exp
+    - ln
+    - log
+    - sinh
+    - cosh
+    - tanh
+
 ## Represents a complex number
 type Complex
     # type Complex (real: Number) (imaginary: Number)
     type Complex real imaginary
+
+    ## Gets the value of square root of -1
+    i : Complex
+    i = Complex 0 1
+
+    ## Gets the complex number times -1
+
+      > Example
+        The following computes -1 * (3+4i)
+
+          Complex 3 4 . negate
+
+    negate : Complex
+    negate = Complex -this.real -this.imaginary
 
     ## Gets the inverse of the complex number
 
@@ -18,12 +48,22 @@ type Complex
     ## Gets the absolute (or modulus) of the complex number
 
       > Example
+        The following has an squared absolute value of 25:
+
+          Complex 3 4 . absolute_square
+
+    absolute_square : Number
+    absolute_square = (this.real * this.real + this.imaginary * this.imaginary)
+
+    ## Gets the absolute (or modulus) of the complex number
+
+      > Example
         The following has an absolute value of 5:
 
           Complex 3 4 . absolute
 
     absolute : Number
-    absolute = (this.real * this.real + this.imaginary * this.imaginary) . sqrt
+    absolute = this.absolute_square . sqrt
 
     ## Gets the argument of the complex number
 
@@ -63,5 +103,70 @@ type Complex
         Number -> Complex (this.real * that) (this.imaginary * that)
         Complex r i -> Complex (this.real * r - this.imaginary * i) (this.real * i + this.imaginary * r)
 
+    ## Division operator for Complex or Number
+    / : Complex | Number -> Complex
+    / that =  case that of
+        Number -> Complex (this.real / that) (this.imaginary / that)
+        Complex r i ->
+            real = this.real * r + this.imaginary * i
+            imaginary = this.imaginary * r - this.real * i
+            that_absolute = that.absolute_square
+            Complex (real / that_absolute) (imaginary / that_absolute)
 
-Complex.i = Complex 0 1
+    ## Equality operator for Complex or Number
+    == : Complex | Number -> Boolean
+    == that = case that of
+        Number -> this.real==that && this.imaginary==0
+        Complex -> this.real==that.real && this.imaginary==that.imaginary
+
+    ## Inequality operator for Complex or Number
+    != : Complex | Number -> Boolean
+    != that = case that of
+         Number -> this.real!=that || this.imaginary!=0
+         Complex -> this.real!=that.real || this.imaginary!=that.imaginary
+
+    ## Converts the complex number into polar form (absolute, argument)
+    polar_form : Pair
+    polar_form = Pair this.absolute this.argument
+
+    ## Given a polar form convert into a complex number
+    from_polar_form : Pair -> Complex
+    from_polar_form polar = Complex (polar.first * polar.second.cos) (polar.first * polar.second.sin)
+
+    ## ALIAS Natural Logarithm
+
+       Computes the natural logarithm function of a complex number.
+
+       > Example
+         Calculate the natural logarithm of 2 + 2i.
+
+            Complex 2 2 . ln
+    ln : Complex
+    ln = Complex (this.absolute.ln) this.argument
+
+    ## ALIAS Logarithm
+
+       Computes the logarithm function of a complex number.
+
+       > Example
+         Calculate the logarithm base 10 of 2 + 2i.
+
+            Complex 2 2 . log
+    log : Complex Number
+    log (base=10) =
+        base_log = base.lb
+        Complex (this.absolute.ln / base_log) this.argument/base_log
+
+    ## ALIAS Exponential
+
+       Computes the exponential function, raising Euler's number `e` to the power of
+       `this`.
+
+       > Example
+         Calculate e to the (2+2i)th power.
+
+             Complex 2 2 . exp
+    exp : Complex
+    exp =
+        factor = this.real.exp
+        Complex (this.imaginary.cos * factor) (this.imaginary.sin * factor)

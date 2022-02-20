@@ -104,7 +104,7 @@ Number.sinh = Math.sinh this.to_decimal
 ## Computes the hyperbolic cosine function.
 
    > Example
-     Calcualte the hyperbolic cosine of 1.
+     Calculate the hyperbolic cosine of 1.
 
          1.cosh
 Number.cosh : Decimal
@@ -121,7 +121,7 @@ Number.tanh = Math.tanh this.to_decimal
 
 ## ALIAS Exponential
 
-   Computes the exponential function, raising Euler's number `r` to the power of
+   Computes the exponential function, raising Euler's number `e` to the power of
    `this`.
 
    > Example
