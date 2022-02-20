@@ -1,17 +1,12 @@
 from Standard.Base import all
 
 ## Functions
-    - ^
-    - sqrt
     - cos
     - sin
     - tan
     - acos
     - asin
     - atan
-    - exp
-    - ln
-    - log
     - sinh
     - cosh
     - tanh
@@ -50,20 +45,20 @@ type Complex
       > Example
         The following has an squared absolute value of 25:
 
-          Complex 3 4 . absolute_square
+          Complex 3 4 . abs_square
 
-    absolute_square : Number
-    absolute_square = (this.real * this.real + this.imaginary * this.imaginary)
+    abs_square : Number
+    abs_square = (this.real * this.real + this.imaginary * this.imaginary)
 
     ## Gets the absolute (or modulus) of the complex number
 
       > Example
         The following has an absolute value of 5:
 
-          Complex 3 4 . absolute
+          Complex 3 4 . abs
 
-    absolute : Number
-    absolute = this.absolute_square . sqrt
+    abs : Number
+    abs = this.abs_square . sqrt
 
     ## Gets the argument of the complex number
 
@@ -84,6 +79,17 @@ type Complex
 
     conjugate : Complex
     conjugate = Complex this.real -this.imaginary
+
+    ## ALIAS Square Root
+
+       Computes the square root of `this`.
+
+       > Example
+         Calculate the square root of 2+3i.
+
+             (Complex 2 3).sqrt
+    sqrt : Complex
+    sqrt = Complex.from_polar_form (Pair this.abs.sqrt (this.argument/2))
 
     ## Addition operator for Complex or Number
     + : Complex | Number -> Complex
@@ -110,8 +116,21 @@ type Complex
         Complex r i ->
             real = this.real * r + this.imaginary * i
             imaginary = this.imaginary * r - this.real * i
-            that_absolute = that.absolute_square
-            Complex (real / that_absolute) (imaginary / that_absolute)
+            that_abs = that.abs_square
+            Complex (real / that_abs) (imaginary / that_abs)
+
+    ## Raise complex to a power
+    ^ : Complex | Number -> Complex
+    ^ that = case that of
+        Number -> this ^ (Complex that 0)
+        Complex ->
+            if (that == Complex 0 0) then (Complex 1 0) else
+                if (this == Complex 0 0) then (Complex 0 0) else
+                    rho = this.abs
+                    arg = this.argument
+                    new_rho = that.real*arg + that.imaginary*(rho.ln)
+                    new_abs = rho^this.real * (-that.imaginary * arg).exp
+                    Complex (new_abs * new_arg.cos) (new_abs * new_arg.sin)
 
     ## Equality operator for Complex or Number
     == : Complex | Number -> Boolean
@@ -127,7 +146,7 @@ type Complex
 
     ## Converts the complex number into polar form (absolute, argument)
     polar_form : Pair
-    polar_form = Pair this.absolute this.argument
+    polar_form = Pair this.abs this.argument
 
     ## Given a polar form convert into a complex number
     from_polar_form : Pair -> Complex
@@ -142,7 +161,7 @@ type Complex
 
             Complex 2 2 . ln
     ln : Complex
-    ln = Complex (this.absolute.ln) this.argument
+    ln = Complex (this.abs.ln) this.argument
 
     ## ALIAS Logarithm
 
@@ -155,7 +174,7 @@ type Complex
     log : Complex Number
     log (base=10) =
         base_log = base.lb
-        Complex (this.absolute.ln / base_log) this.argument/base_log
+        Complex (this.abs.ln / base_log) this.argument/base_log
 
     ## ALIAS Exponential
 
