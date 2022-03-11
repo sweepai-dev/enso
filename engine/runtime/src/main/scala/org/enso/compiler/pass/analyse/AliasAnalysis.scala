@@ -461,7 +461,7 @@ case object AliasAnalysis extends IRPass {
           function  = analyseExpression(fun, graph, scope),
           arguments = analyseCallArguments(arguments, graph, scope)
         )
-      case app @ IR.Application.Force(expr, _, _, _) =>
+      case app @ IR.Application.Force(expr, _, _, _, _) =>
         app.copy(target = analyseExpression(expr, graph, scope))
       case app @ IR.Application.Literal.Sequence(items, _, _, _) =>
         app.copy(items = items.map(analyseExpression(_, graph, scope)))
@@ -757,6 +757,8 @@ case object AliasAnalysis extends IRPass {
 
       /** @inheritdoc */
       override def duplicate(): Option[IRPass.Metadata] = None
+
+      def isLocal: Boolean = graph.defLinkFor(id).isDefined
     }
   }
 

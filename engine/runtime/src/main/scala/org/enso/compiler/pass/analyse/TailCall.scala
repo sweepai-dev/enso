@@ -241,7 +241,7 @@ case object TailCall extends IRPass {
             arguments = args.map(analyseCallArg)
           )
           .updateMetadata(this -->> TailPosition.fromBool(isInTailPosition))
-      case force @ IR.Application.Force(target, _, _, _) =>
+      case force @ IR.Application.Force(target, _, _, _, _) =>
         force
           .copy(
             target = analyseExpression(target, isInTailPosition)

@@ -291,13 +291,12 @@ case object UppercaseNames extends IRPass {
     }
 
   private def isLocalVar(name: IR.Name.Literal): Boolean = {
-    val aliasInfo = name
+    name
       .unsafeGetMetadata(
         AliasAnalysis,
         "no alias analysis info on a name"
       )
       .unsafeAs[AliasAnalysis.Info.Occurrence]
-    val defLink = aliasInfo.graph.defLinkFor(aliasInfo.id)
-    defLink.isDefined
+      .isLocal
   }
 }

@@ -133,7 +133,7 @@ case object TypeFunctions extends IRPass {
               arguments = arguments.map(resolveCallArgument)
             )
         }
-      case force @ Application.Force(target, _, _, _) =>
+      case force @ Application.Force(target, _, _, _, _) =>
         force.copy(target = resolveExpression(target))
       case seq @ Application.Literal.Sequence(items, _, _, _) =>
         seq.copy(

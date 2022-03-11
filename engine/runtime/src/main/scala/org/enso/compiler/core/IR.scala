@@ -4553,6 +4553,10 @@ object IR {
       }
     }
 
+    sealed trait ForceKind
+    case object ForceThunk extends ForceKind
+    case object ForceDefaults extends ForceKind
+
     /** A representation of a term that is explicitly forced.
       *
       * @param target the expression being forced
@@ -4562,6 +4566,7 @@ object IR {
       */
     sealed case class Force(
       target: Expression,
+      kind: ForceKind,
       override val location: Option[IdentifiedLocation],
       override val passData: MetadataStorage      = MetadataStorage(),
       override val diagnostics: DiagnosticStorage = DiagnosticStorage()
@@ -4580,12 +4585,13 @@ object IR {
         */
       def copy(
         target: Expression                   = target,
+        kind: ForceKind = kind,
         location: Option[IdentifiedLocation] = location,
         passData: MetadataStorage            = passData,
         diagnostics: DiagnosticStorage       = diagnostics,
         id: Identifier                       = id
       ): Force = {
-        val res = Force(target, location, passData, diagnostics)
+        val res = Force(target, kind, location, passData, diagnostics)
         res.id = id
         res
       }

@@ -306,7 +306,7 @@ case object DataflowAnalysis extends IRPass {
             arguments = args.map(analyseCallArgument(_, info))
           )
           .updateMetadata(this -->> info)
-      case force @ IR.Application.Force(target, _, _, _) =>
+      case force @ IR.Application.Force(target, _, _, _, _) =>
         val targetDep = asStatic(target)
         val forceDep  = asStatic(force)
         info.dependents.updateAt(targetDep, Set(forceDep))

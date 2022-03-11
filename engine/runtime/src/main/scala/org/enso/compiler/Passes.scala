@@ -59,8 +59,8 @@ class Passes(
       UppercaseNames,
       MethodCalls,
       VectorLiterals,
-      FullyAppliedFunctionUses,
-      AliasAnalysis
+      AliasAnalysis,
+      FullyAppliedFunctionUses
     ) ++
     (if (config.autoParallelismEnabled) {
        List(

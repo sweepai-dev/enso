@@ -2,12 +2,11 @@ package org.enso.compiler.pass.resolve
 
 import org.enso.compiler.context.{InlineContext, ModuleContext}
 import org.enso.compiler.core.IR
+import org.enso.compiler.core.IR.Application.ForceDefaults
 import org.enso.compiler.data.BindingsMap
-import org.enso.compiler.data.BindingsMap.{
-  Resolution,
-  ResolvedConstructor
-}
+import org.enso.compiler.data.BindingsMap.{Resolution, ResolvedConstructor}
 import org.enso.compiler.pass.IRPass
+import org.enso.compiler.pass.analyse.AliasAnalysis
 
 /** Resolves calls to methods defined on modules, called on direct (resolved)
   * module references.
@@ -18,7 +17,7 @@ object FullyAppliedFunctionUses extends IRPass {
   override type Config   = IRPass.Configuration.Default
 
   override val precursorPasses: Seq[IRPass] =
-    Seq(UppercaseNames)
+    Seq(AliasAnalysis, UppercaseNames)
   override val invalidatedPasses: Seq[IRPass] = Seq()
 
   override def updateMetadataInDuplicate[T <: IR](sourceIr: T, copyOfIr: T): T =
@@ -62,7 +61,19 @@ object FullyAppliedFunctionUses extends IRPass {
           case Some(Resolution(ResolvedConstructor(_, cons)))
               if cons.allFieldsDefaulted && cons.arity > 0 =>
             IR.Application.Prefix(name, List(), false, None);
-          case _ => name
+          case _ =>
+            val isLocal = name
+              .unsafeGetMetadata(
+                AliasAnalysis,
+                "no alias analysis info on a name"
+              )
+              .unsafeAs[AliasAnalysis.Info.Occurrence]
+              .isLocal
+            if (isLocal) {
+              IR.Application.Force(name, ForceDefaults, None)
+            } else {
+              name
+            }
         }
     }
   }

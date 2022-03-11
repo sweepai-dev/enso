@@ -2,6 +2,7 @@ package org.enso.compiler.pass.analyse
 
 import org.enso.compiler.context.{InlineContext, ModuleContext}
 import org.enso.compiler.core.IR
+import org.enso.compiler.core.IR.Application.ForceThunk
 import org.enso.compiler.exception.CompilerError
 import org.enso.compiler.pass.IRPass
 import org.enso.compiler.pass.optimise.LambdaConsolidate
@@ -207,7 +208,7 @@ case object DemandAnalysis extends IRPass {
             )
         }
 
-        IR.Application.Force(newName, forceLocation)
+        IR.Application.Force(newName, ForceThunk, forceLocation)
       } else {
         name
       }
@@ -234,7 +235,7 @@ case object DemandAnalysis extends IRPass {
           ),
           arguments = args.map(analyseCallArgument)
         )
-      case force @ IR.Application.Force(target, _, _, _) =>
+      case force @ IR.Application.Force(target, _, _, _, _) =>
         force.copy(target =
           analyseExpression(
             target,

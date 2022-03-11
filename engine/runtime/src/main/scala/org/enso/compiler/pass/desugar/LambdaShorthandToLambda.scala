@@ -254,7 +254,7 @@ case object LambdaShorthandToLambda extends IRPass {
           case lam: IR.Function.Lambda => lam.copy(location = p.location)
           case result                  => result
         }
-      case f @ IR.Application.Force(tgt, _, _, _) =>
+      case f @ IR.Application.Force(tgt, _, _, _, _) =>
         f.copy(target = desugarExpression(tgt, freshNameSupply))
       case vector @ IR.Application.Literal.Sequence(items, _, _, _) =>
         var bindings: List[IR.Name] = List()
