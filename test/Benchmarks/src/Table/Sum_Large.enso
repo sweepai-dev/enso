@@ -1,0 +1,24 @@
+from Standard.Base import all
+
+import Standard.Test.Bench
+
+import Standard.Table.Data.Table
+import Standard.Table.Data.Column_Selector
+from Standard.Table.Data.Aggregate_Column import all
+
+import project.Table.Aggregate
+
+## Bench Utilities ============================================================
+
+vector_size = 30000
+iter_size = 25
+num_iterations = 10
+
+## The Benchmarks ==============================================================
+main =
+    IO.println <| "Making table data..."
+    table = Aggregate.create_table here.vector_size
+
+    IO.println <| "Benchmarking..."
+    Bench.measure (table.aggregate [Sum "ValueWithNothing"]) "Sum table" here.iter_size here.num_iterations
+    Bench.measure (table.aggregate [Group_By "Index", Sum "ValueWithNothing"]) "Sum index" here.iter_size here.num_iterations
