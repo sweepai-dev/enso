@@ -1,0 +1,67 @@
+from Standard.Base import all
+from Standard.Table import all
+from Standard.Database import all
+
+import project.Connection.Connection.Connection
+import project.Connection.SQLite_Options.In_Memory
+
+polyglot java import org.enso.database.DataTest
+
+type Data
+    connect : Text -> Connection
+    connect path =
+        if path.contains "://" then Data.read_uri_path path else
+            ## Treat as a File
+            File.read path
+
+    read_uri_path : Text -> Connection
+    read_uri_path path =
+        location = path.location_of "://"
+        scheme = path.take (First location.start)
+        uri = path.drop (First location.end)
+        case scheme of
+            "file" -> File.read uri
+            "sqlite" ->
+                if uri == "memory" then Database.connect In_Memory else
+                    Database.connect (SQLite uri)
+            "postgres" ->
+                split_parts = uri.split "/"
+                uri_parts = split_parts . first . split ":"
+                host = uri_parts.first
+                port = if uri_parts.length == 1 then 5432 else Integer.parse (uri_parts.at 1)
+                db_name = if split_parts.length < 2 then "postgres" else split_parts.at 1
+                schema = if split_parts.length < 3 then "public" else split_parts.at 2
+                creds = Credential_Manager.load host
+                if creds.is_nothing then Error.throw (No_Credentials_Found.Value ("No credentials found for " + host)) else
+                    username_password = Credentials.Username_And_Password (creds.at 0) (creds.at 1)
+                    Database.connect (Postgres.Database host port db_name schema username_password)
+            "enso" -> Enso_Source.Definition uri . connect
+
+type Enso_Source
+    Definition uri:Text
+
+    connect : Connection
+    connect self =
+        Nothing
+
+type Credential_Manager
+    list : Vector Text
+    list =
+        array = DataTest.listCredentials
+        Vector.from_polyglot_array array
+
+    load : Text -> Vector Text
+    load name =
+        array = DataTest.getCredential name
+        if array.length == 0 then Nothing else Vector.from_polyglot_array array
+
+    save : Text -> Vector Text -> Nothing
+    save name arguments =
+        DataTest.setCredential name arguments.to_array
+
+type No_Credentials_Found
+    Value message:Text
+
+Credentials.save Text -> Nothing
+Credentials.save self name =
+    Credential_Manager.save name [self.username, self.password]
