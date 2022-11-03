@@ -34,7 +34,7 @@ type Data
                 creds = Credential_Manager.load host
                 if creds.is_nothing then Error.throw (No_Credentials_Found.Value ("No credentials found for " + host)) else
                     username_password = Credentials.Username_And_Password (creds.at 0) (creds.at 1)
-                    Database.connect (Postgres.Database host port db_name schema username_password)
+                    Database.connect (Postgres host port db_name schema username_password)
             "enso" -> Enso_Source.Definition uri . connect
 
 type Enso_Source
