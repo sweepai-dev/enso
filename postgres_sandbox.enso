@@ -1,0 +1,17 @@
+from Standard.Base import all
+import Standard.Base.Runtime.Debug
+from Standard.Table import Table
+from Standard.Database import Database, Postgres, SQL_Query, Credentials, SSL_Mode
+
+main =
+    db_name = Environment.get "ENSO_DATABASE_TEST_DB_NAME"
+    db_host_port = (Environment.get "ENSO_DATABASE_TEST_HOST").if_nothing "localhost" . split ':'
+    db_host = db_host_port.at 0
+    db_port = if db_host_port.length == 1 then 5432 else Integer.parse (db_host_port.at 1)
+    db_user = Environment.get "ENSO_DATABASE_TEST_DB_USER"
+    db_password = Environment.get "ENSO_DATABASE_TEST_DB_PASSWORD"
+    ca_cert_file = Environment.get "ENSO_DATABASE_TEST_CA_CERT_FILE"
+    connection = Database.connect (Postgres (db_host_port.at 0) db_port db_name credentials=(Credentials.Username_And_Password db_user db_password))
+    catalogue = connection.tables
+    catalogue.print
+    Debug.breakpoint
