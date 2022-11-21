@@ -2,16 +2,42 @@ from Standard.Base import all
 import Standard.Base.Runtime.Debug
 from Standard.Table import Table
 from Standard.Database import Database, Postgres, SQL_Query, Credentials, SSL_Mode
+from Standard.Database.Errors import SQL_Error, SQL_Error_Data
+import Standard.Base.Runtime.Resource
+
+is_already_exists error = case error of
+    _ : SQL_Error -> error.java_exception.getMessage.contains "already exists"
+    _ -> False
+
+with_temporary_db connection dbname ~action =
+    create_db dbname =
+        IO.println "Creating "+dbname
+        created = connection.execute_update 'CREATE DATABASE "'+dbname+'"'
+        created.catch Any error->
+            if is_already_exists error . not then
+                Panic.throw (Illegal_State_Error_Data "Unexpected error when creating the database: "+error.to_text cause=error)
+        dbname
+    drop_db _ =
+        IO.println "Dropping "+dbname
+        connection.execute_update 'DROP DATABASE "'+dbname+'"'
+    Resource.bracket (create_db dbname) drop_db _->
+        action
 
 main =
     db_name = Environment.get "ENSO_DATABASE_TEST_DB_NAME"
     db_host_port = (Environment.get "ENSO_DATABASE_TEST_HOST").if_nothing "localhost" . split ':'
-    db_host = db_host_port.at 0
     db_port = if db_host_port.length == 1 then 5432 else Integer.parse (db_host_port.at 1)
     db_user = Environment.get "ENSO_DATABASE_TEST_DB_USER"
     db_password = Environment.get "ENSO_DATABASE_TEST_DB_PASSWORD"
-    ca_cert_file = Environment.get "ENSO_DATABASE_TEST_CA_CERT_FILE"
     connection = Database.connect (Postgres (db_host_port.at 0) db_port db_name credentials=(Credentials.Username_And_Password db_user db_password))
-    catalogue = connection.tables
-    catalogue.print
-    Debug.breakpoint
+    connection.execute_update "CREATE TEMPORARY TABLE foo (bar INTEGER)"
+    connection.execute_update "CREATE TEMPORARY TABLE bar (bar INTEGER)"
+    connection.tables.print
+    secondary_db = "enso-test-db-secondary"
+    Panic.catch Any handler=IO.println <|
+        with_temporary_db connection secondary_db <|
+            secondary_connection = Database.connect (Postgres (db_host_port.at 0) db_port secondary_db credentials=(Credentials.Username_And_Password db_user db_password))
+            secondary_connection.execute_update "CREATE TEMPORARY TABLE foo (bar INTEGER)"
+            secondary_connection.execute_update "CREATE TEMPORARY TABLE baz (bar INTEGER)"
+            connection.tables.print
+            Debug.breakpoint
