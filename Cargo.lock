@@ -2092,6 +2092,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "enso-lazy"
+version = "0.1.0"
+dependencies = [
+ "az",
+ "cfg-if 1.0.0",
+ "serde",
+]
+
+[[package]]
 name = "enso-logger"
 version = "0.3.1"
 dependencies = [
