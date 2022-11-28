@@ -1,4 +1,6 @@
 use std::iter::Iterator;
+use enso_prelude::OptionOps;
+
 use crate::bwd::Bwd;
 use crate::fwd::Fwd;
 
@@ -25,8 +27,8 @@ pub trait FTV {
 }
 
 impl FTV for TyName {
-  fn contains(&self, name: TyName) -> bool { 
-    *self == name 
+  fn contains(&self, name: TyName) -> bool {
+    *self == name
   }
 }
 
@@ -57,21 +59,23 @@ macro_rules! into_iter_ftv {
   }
 }
 
-#[macro_export]
-macro_rules! iter_ftv {
-  () => {
-    fn contains(&self, _name: TyName) -> bool {
-      panic!("wtf")
-  //    <Self as Iterator>::any(&self,|x|x.contains(name))
-    }
+impl <A:FTV> FTV for Option<A> {
+  fn contains(&self, name: TyName) -> bool {
+    self.map_ref(|x|x.contains(name)).unwrap_or(false)
   }
 }
-  
-impl <A:FTV> FTV for Option<A> {
-  into_iter_ftv!{}
+
+impl <A:FTV> FTV for Bwd<A> {
+  fn contains(&self, name: TyName) -> bool {
+    Bwd::visit(self,|x|x.contains(name))
+  }
 }
-impl <A:FTV> FTV for Bwd<A> { iter_ftv!{} }
-impl <A:FTV> FTV for Fwd<A> { iter_ftv!{} }
+
+impl <A:FTV> FTV for Fwd<A> {
+  fn contains(&self, name: TyName) -> bool {
+    Fwd::visit(self,|x|x.contains(name))
+  }
+}
 
 impl FTV for TyEntry {
   fn contains(&self, name: TyName) -> bool {
@@ -134,10 +138,10 @@ pub struct Context {
 }
 
 impl Default for Context {
-  fn default() -> Self { 
-    Context { 
-      next: 0, 
-      ctx: Bwd::nil() 
+  fn default() -> Self {
+    Context {
+      next: 0,
+      ctx: Bwd::nil()
     }
   }
 }
@@ -146,7 +150,7 @@ impl Context {
   fn fresh (&mut self, decl: Option<Ty>) -> TyName {
     self.next += 1;
     let next = TyName(self.next);
-    self.ctx = self.ctx.clone().snoc(Entry::TY(TyEntry(next,decl)));
+    self.ctx.snoc_mut(Entry::TY(TyEntry(next,decl)));
     next
   }
 
@@ -157,33 +161,34 @@ impl Context {
   #[allow(non_snake_case)]
   fn onTop<E : AsNoContext,F>(&mut self, f: F) -> Result<(),E> where
      F : FnOnce(&mut Context,TyEntry) -> Result<Ext,E> {
-     let (new_ctx, nuD) = self.ctx.unsnoc().ok_or_else(|| E::no_context() )?;
-     self.ctx = new_ctx;
+     let nuD = self.ctx.next().ok_or_else(|| E::no_context())?;
      Ok(match nuD {
       Entry::TY(aD) => {
         match f(self,aD.clone())? {
           Ext::Replace(suffix) => self.push(suffix),
-          Ext::Restore => self.ctx = self.ctx.clone().snoc(Entry::TY(aD))
+          Ext::Restore => {
+            self.ctx.snoc_mut(Entry::TY(aD))
+          }
         }
       },
-      #[allow(unreachable_patterns)] // for future expansion
-      _ => { 
+      #[allow(unreachable_patterns)] // solely for future expansion as we add more cases to Entry
+      _ => {
         self.onTop(f)?;
-        self.ctx = self.ctx.clone().snoc(nuD)
+        self.ctx.snoc_mut(nuD)
       }
     })
   }
 
-  // TODO: borrow lhs and rhs 
+  // TODO: borrow lhs and rhs
   fn unify(&mut self, lhs: &Ty, rhs: &Ty) -> Result<(),UnifyError> {
     match (lhs,rhs) {
-      (Ty::Arr(box t0,box t1),Ty::Arr(box v0,box v1)) => { 
+      (Ty::Arr(box t0,box t1),Ty::Arr(box v0,box v1)) => {
         self.unify(&t0,&t1)?;
-        self.unify(&v0,&v1) 
+        self.unify(&v0,&v1)
       },
       (Ty::V(a), Ty::V(b)) => {
         self.onTop(|this,te| {
-          let TyEntry(g, d) = te; 
+          let TyEntry(g, d) = te;
           Ok(
             match (g == *a, g == *b, d) {
               (true, true,  _) => restore,
@@ -192,7 +197,7 @@ impl Context {
               (true, false, Some(t)) => { this.unify(&v(*b),&t)?; restore }
               (false, true, Some(t)) => { this.unify(&v(*a),&t)?; restore }
               (false, false, _) => { this.unify(&v(*a),&v(*b))?; restore }
-            }          
+            }
           )
         })
       },
@@ -207,11 +212,10 @@ impl Context {
       let TyEntry(g, d) = te;
       let occurs = t.contains(g) || suffix.contains(g);
       match (g == a, occurs, d) {
-        (true, true, _) => 
+        (true, true, _) =>
           Err(UnifyError::Occurs),
-        (true, false, None) => 
-          // requires 
-          Ok(replace(suffix.append(&Fwd::singleton(TyEntry(a,Some(t.clone())))))),
+        (true, false, None) =>
+          Ok(replace(suffix.append(Fwd::singleton(TyEntry(a,Some(t.clone())))))),
         (true, false, Some(v)) => {
           this.push(suffix);
           this.unify(&v,&t)?;
@@ -219,7 +223,7 @@ impl Context {
         },
         (false, true, d) => {
           this.solve(a,Fwd::cons(TyEntry(g,d),suffix), t)?;
-          Ok(replace(Fwd::nil())) 
+          Ok(replace(Fwd::nil()))
         }
         (false, false, _) => {
           this.solve(a,suffix,t)?;
