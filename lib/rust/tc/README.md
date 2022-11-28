@@ -1,6 +1,6 @@
 not my most efficient rust code ever.
 
-Switched to Box<> internally so I could use box patterns and box expressions.
+Switched to Box<> internally so I could use box patterns and box expressions. The cost is a rather excessive level of deep copying.
 
 This should switch to Arc<> or a hashconsing type later, but doing so seems to make the unifier into a complete mess of spaghetti code, so it behooves us to get it right, and get it tested before making it fast.
 

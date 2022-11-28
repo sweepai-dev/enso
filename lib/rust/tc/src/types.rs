@@ -48,8 +48,9 @@ impl FTV for Ty {
 }
 
 #[derive(Clone,Debug)]
-pub struct TyEntry(TyName, Option<Ty>);
+pub struct TyEntry(TyName, Option<Ty>); // this should hold an Option<Rc<Ty>> so we can skip the expensive clone
 
+/*
 #[macro_export]
 macro_rules! into_iter_ftv {
   () => {
@@ -58,6 +59,7 @@ macro_rules! into_iter_ftv {
     }
   }
 }
+*/
 
 impl <A:FTV> FTV for Option<A> {
   fn contains(&self, name: TyName) -> bool {
@@ -101,6 +103,15 @@ pub fn affix(mut ctx: Ctx, mut suffix: Suffix) -> Ctx {
   }
   ctx
 }
+
+pub fn affix_mut(ctx: &mut Ctx, mut suffix: Suffix) {
+  while let Some((te,new_suffix)) = suffix.uncons() {
+    ctx.snoc_mut(Entry::TY(te));
+    suffix = new_suffix;
+  }
+}
+
+
 
 #[derive(Debug,Clone)]
 pub enum Ext {
@@ -155,7 +166,7 @@ impl Context {
   }
 
   fn push(&mut self, suffix: Suffix) {
-    self.ctx = affix(self.ctx.clone(), suffix)
+    affix_mut(&mut self.ctx, suffix)
   }
 
   #[allow(non_snake_case)]
@@ -164,14 +175,14 @@ impl Context {
      let nuD = self.ctx.next().ok_or_else(|| E::no_context())?;
      Ok(match nuD {
       Entry::TY(aD) => {
-        match f(self,aD.clone())? {
+        match f(self,aD.clone())? { // this is the sole use of clone in the entire unifier
           Ext::Replace(suffix) => self.push(suffix),
           Ext::Restore => {
             self.ctx.snoc_mut(Entry::TY(aD))
           }
         }
       },
-      #[allow(unreachable_patterns)] // solely for future expansion as we add more cases to Entry
+      #[allow(unreachable_patterns)]
       _ => {
         self.onTop(f)?;
         self.ctx.snoc_mut(nuD)
@@ -180,34 +191,33 @@ impl Context {
   }
 
   // TODO: borrow lhs and rhs
-  fn unify(&mut self, lhs: &Ty, rhs: &Ty) -> Result<(),UnifyError> {
+  fn unify(&mut self, lhs: Ty, rhs: Ty) -> Result<(),UnifyError> {
     match (lhs,rhs) {
       (Ty::Arr(box t0,box t1),Ty::Arr(box v0,box v1)) => {
-        self.unify(&t0,&t1)?;
-        self.unify(&v0,&v1)
+        self.unify(t0,t1)?;
+        self.unify(v0,v1)
       },
       (Ty::V(a), Ty::V(b)) => {
         self.onTop(|this,te| {
           let TyEntry(g, d) = te;
           Ok(
-            match (g == *a, g == *b, d) {
+            match (g == a, g == b, d) {
               (true, true,  _) => restore,
-              (true, false, None) => replace(Fwd::cons(TyEntry(*a,Some(v(*b))),Fwd::nil())),
-              (false, true, None) => replace(Fwd::cons(TyEntry(*b,Some(v(*a))),Fwd::nil())),
-              (true, false, Some(t)) => { this.unify(&v(*b),&t)?; restore }
-              (false, true, Some(t)) => { this.unify(&v(*a),&t)?; restore }
-              (false, false, _) => { this.unify(&v(*a),&v(*b))?; restore }
+              (true, false, None) => replace(Fwd::cons(TyEntry(a,Some(v(b))),Fwd::nil())),
+              (false, true, None) => replace(Fwd::cons(TyEntry(b,Some(v(a))),Fwd::nil())),
+              (true, false, Some(t)) => { this.unify(v(b),t)?; restore }
+              (false, true, Some(t)) => { this.unify(v(a),t)?; restore }
+              (false, false, _) => { this.unify(v(a),v(b))?; restore }
             }
           )
         })
       },
-      (Ty::V(a), t) => self.solve(*a,Fwd::nil(),t),
-      (t, Ty::V(b)) => self.solve(*b,Fwd::nil(),t)
+      (Ty::V(a), t) => self.solve(a,Fwd::nil(),t),
+      (t, Ty::V(b)) => self.solve(b,Fwd::nil(),t)
     }
   }
 
-  // todo generalize error type to AsUnifyError?
-  fn solve(&mut self, a: TyName, suffix: Suffix, t: &Ty) -> Result<(),UnifyError> {
+  fn solve(&mut self, a: TyName, suffix: Suffix, t: Ty) -> Result<(),UnifyError> {
     self.onTop(|this,te| -> Result<Ext, UnifyError> {
       let TyEntry(g, d) = te;
       let occurs = t.contains(g) || suffix.contains(g);
@@ -215,10 +225,10 @@ impl Context {
         (true, true, _) =>
           Err(UnifyError::Occurs),
         (true, false, None) =>
-          Ok(replace(suffix.append(Fwd::singleton(TyEntry(a,Some(t.clone())))))),
+          Ok(replace(suffix.append(Fwd::singleton(TyEntry(a,Some(t)))))),
         (true, false, Some(v)) => {
           this.push(suffix);
-          this.unify(&v,&t)?;
+          this.unify(v,t)?;
           Ok(restore)
         },
         (false, true, d) => {
