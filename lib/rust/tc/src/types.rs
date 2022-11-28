@@ -1,4 +1,5 @@
 use std::iter::Iterator;
+use std::rc::Rc;
 use enso_prelude::OptionOps;
 
 use crate::bwd::Bwd;
@@ -48,18 +49,7 @@ impl FTV for Ty {
 }
 
 #[derive(Clone,Debug)]
-pub struct TyEntry(TyName, Option<Ty>); // this should hold an Option<Rc<Ty>> so we can skip the expensive clone
-
-/*
-#[macro_export]
-macro_rules! into_iter_ftv {
-  () => {
-    fn contains(&self, name: TyName) -> bool {
-      self.clone().into_iter().any(|x|x.contains(name))
-    }
-  }
-}
-*/
+pub struct TyEntry(TyName, Option<Rc<Ty>>); // this should hold an Option<Rc<Ty>> so we can skip the expensive clone
 
 impl <A:FTV> FTV for Option<A> {
   fn contains(&self, name: TyName) -> bool {
@@ -158,7 +148,7 @@ impl Default for Context {
 }
 
 impl Context {
-  fn fresh (&mut self, decl: Option<Ty>) -> TyName {
+  fn fresh (&mut self, decl: Option<Rc<Ty>>) -> TyName {
     self.next += 1;
     let next = TyName(self.next);
     self.ctx.snoc_mut(Entry::TY(TyEntry(next,decl)));
@@ -175,7 +165,7 @@ impl Context {
      let nuD = self.ctx.next().ok_or_else(|| E::no_context())?;
      Ok(match nuD {
       Entry::TY(aD) => {
-        match f(self,aD.clone())? { // this is the sole use of clone in the entire unifier
+        match f(self,aD.clone())? { // using a cheap Rc-based clone since this happens all the time
           Ext::Replace(suffix) => self.push(suffix),
           Ext::Restore => {
             self.ctx.snoc_mut(Entry::TY(aD))
@@ -203,10 +193,10 @@ impl Context {
           Ok(
             match (g == a, g == b, d) {
               (true, true,  _) => restore,
-              (true, false, None) => replace(Fwd::cons(TyEntry(a,Some(v(b))),Fwd::nil())),
-              (false, true, None) => replace(Fwd::cons(TyEntry(b,Some(v(a))),Fwd::nil())),
-              (true, false, Some(t)) => { this.unify(v(b),t)?; restore }
-              (false, true, Some(t)) => { this.unify(v(a),t)?; restore }
+              (true, false, None) => replace(Fwd::cons(TyEntry(a,Some(Rc::new(v(b)))),Fwd::nil())),
+              (false, true, None) => replace(Fwd::cons(TyEntry(b,Some(Rc::new(v(a)))),Fwd::nil())),
+              (true, false, Some(t)) => { this.unify(v(b),t.as_ref().clone())?; restore }
+              (false, true, Some(t)) => { this.unify(v(a),t.as_ref().clone())?; restore }
               (false, false, _) => { this.unify(v(a),v(b))?; restore }
             }
           )
@@ -225,10 +215,10 @@ impl Context {
         (true, true, _) =>
           Err(UnifyError::Occurs),
         (true, false, None) =>
-          Ok(replace(suffix.append(Fwd::singleton(TyEntry(a,Some(t)))))),
+          Ok(replace(suffix.append(Fwd::singleton(TyEntry(a,Some(Rc::new(t))))))),
         (true, false, Some(v)) => {
           this.push(suffix);
-          this.unify(v,t)?;
+          this.unify(v.as_ref().clone(),t)?;
           Ok(restore)
         },
         (false, true, d) => {
