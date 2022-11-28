@@ -10,8 +10,6 @@ readme = "README.md"
 repository = "https://github.com/horasal/bitvector_simd"
 keywords = ["bitvector"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 packed_simd = { version = "0.3.7", package = "packed_simd_2" }
 
