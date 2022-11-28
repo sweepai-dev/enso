@@ -1,0 +1,19 @@
+[package]
+name = "enso-tc"
+version = "0.1.0"
+authors = ["Enso Team <enso-dev@enso.org>"]
+edition = "2021"
+description = "Enso Typechecker."
+readme = "README.md"
+homepage = "https://github.com/enso-org/enso"
+repository = "https://github.com/enso-org/enso"
+license-file = "../../LICENSE"
+
+[dependencies]
+enso-parser = { path = "../parser" }
+enso-prelude = { path = "../prelude" }
+enso-data-structures = { path = "../data-structures" }
+az = "1.2"
+cfg-if = "1.0.0"
+serde = { version = "1.0.140", features = ["derive"] }
+

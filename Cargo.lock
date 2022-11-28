@@ -740,6 +740,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "az"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b7e4c2464d97fe331d41de9d5db0def0a96f4d823b8b32a2efd503578988973"
+
+[[package]]
 name = "backtrace"
 version = "0.3.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2357,6 +2363,18 @@ dependencies = [
  "serde_json",
  "wasm-bindgen",
  "web-sys",
+]
+
+[[package]]
+name = "enso-tc"
+version = "0.1.0"
+dependencies = [
+ "az",
+ "cfg-if 1.0.0",
+ "enso-data-structures",
+ "enso-parser",
+ "enso-prelude",
+ "serde",
 ]
 
 [[package]]
