@@ -12,15 +12,17 @@ pub struct TyName(u32);
 #[derive(PartialEq,Eq,PartialOrd,Ord,Clone,Hash,Debug)]
 pub enum Ty {
   V(TyName),
-  Arr(Box<Ty>,Box<Ty>) // i hate everything about this
+  Arr(Type,Type) // i hate everything about this
 }
 
-pub fn v(n: TyName) -> Ty {
-  Ty::V(n)
+type Type = Rc<Ty>;
+
+pub fn v(n: TyName) -> Type {
+  Rc::new(Ty::V(n))
 }
 
-pub fn arr(arg: Ty, res: Ty) -> Ty {
-  Ty::Arr(box arg,box res)
+pub fn arr(arg: &Type, res: &Type) -> Type {
+  Rc::new(Ty::Arr(arg.clone(),res.clone()))
 }
 
 pub trait FTV {
@@ -33,7 +35,7 @@ impl FTV for TyName {
   }
 }
 
-impl <T:FTV> FTV for Box<T> {
+impl <T:FTV> FTV for Rc<T> {
   fn contains(&self, name: TyName) -> bool {
     self.as_ref().contains(name)
   }
@@ -49,7 +51,7 @@ impl FTV for Ty {
 }
 
 #[derive(Clone,Debug)]
-pub struct TyEntry(TyName, Option<Rc<Ty>>); // this should hold an Option<Rc<Ty>> so we can skip the expensive clone
+pub struct TyEntry(TyName, Option<Type>);
 
 impl <A:FTV> FTV for Option<A> {
   fn contains(&self, name: TyName) -> bool {
@@ -124,7 +126,7 @@ pub trait AsNoContext {
 #[derive(Debug,Clone,PartialEq,Eq,PartialOrd,Ord)]
 pub enum UnifyError {
   Occurs,
-  Mismatch(Ty,Ty),
+  Mismatch(Type,Type),
   NoContext
 }
 
@@ -148,7 +150,7 @@ impl Default for Context {
 }
 
 impl Context {
-  fn fresh (&mut self, decl: Option<Rc<Ty>>) -> TyName {
+  fn fresh (&mut self, decl: Option<Type>) -> TyName {
     self.next += 1;
     let next = TyName(self.next);
     self.ctx.snoc_mut(Entry::TY(TyEntry(next,decl)));
@@ -181,9 +183,9 @@ impl Context {
   }
 
   // TODO: borrow lhs and rhs
-  fn unify(&mut self, lhs: Ty, rhs: Ty) -> Result<(),UnifyError> {
-    match (lhs,rhs) {
-      (Ty::Arr(box t0,box t1),Ty::Arr(box v0,box v1)) => {
+  fn unify(&mut self, lhs: &Type, rhs: &Type) -> Result<(),UnifyError> {
+    match (lhs.clone().as_ref(),rhs.clone().as_ref()) {
+      (Ty::Arr(t0,t1),Ty::Arr(v0,v1)) => {
         self.unify(t0,t1)?;
         self.unify(v0,v1)
       },
@@ -191,23 +193,23 @@ impl Context {
         self.onTop(|this,te| {
           let TyEntry(g, d) = te;
           Ok(
-            match (g == a, g == b, d) {
+            match (g == *a, g == *b, d) {
               (true, true,  _) => restore,
-              (true, false, None) => replace(Fwd::cons(TyEntry(a,Some(Rc::new(v(b)))),Fwd::nil())),
-              (false, true, None) => replace(Fwd::cons(TyEntry(b,Some(Rc::new(v(a)))),Fwd::nil())),
-              (true, false, Some(t)) => { this.unify(v(b),t.as_ref().clone())?; restore }
-              (false, true, Some(t)) => { this.unify(v(a),t.as_ref().clone())?; restore }
-              (false, false, _) => { this.unify(v(a),v(b))?; restore }
+              (true, false, None) => replace(Fwd::cons(TyEntry(*a,Some(v(*b))),Fwd::nil())),
+              (false, true, None) => replace(Fwd::cons(TyEntry(*b,Some(v(*a))),Fwd::nil())),
+              (true, false, Some(t)) => { this.unify(&v(*b),&t)?; restore }
+              (false, true, Some(t)) => { this.unify(&v(*a),&t)?; restore }
+              (false, false, _) => { this.unify(&v(*a),&v(*b))?; restore }
             }
           )
         })
       },
-      (Ty::V(a), t) => self.solve(a,Fwd::nil(),t),
-      (t, Ty::V(b)) => self.solve(b,Fwd::nil(),t)
+      (Ty::V(a), _t) => self.solve(*a,Fwd::nil(),rhs),
+      (_t, Ty::V(b)) => self.solve(*b,Fwd::nil(),lhs)
     }
   }
 
-  fn solve(&mut self, a: TyName, suffix: Suffix, t: Ty) -> Result<(),UnifyError> {
+  fn solve(&mut self, a: TyName, suffix: Suffix, t: &Type) -> Result<(),UnifyError> {
     self.onTop(|this,te| -> Result<Ext, UnifyError> {
       let TyEntry(g, d) = te;
       let occurs = t.contains(g) || suffix.contains(g);
@@ -215,10 +217,10 @@ impl Context {
         (true, true, _) =>
           Err(UnifyError::Occurs),
         (true, false, None) =>
-          Ok(replace(suffix.append(Fwd::singleton(TyEntry(a,Some(Rc::new(t))))))),
+          Ok(replace(suffix.append(Fwd::singleton(TyEntry(a,Some(t.clone())))))),
         (true, false, Some(v)) => {
           this.push(suffix);
-          this.unify(v.as_ref().clone(),t)?;
+          this.unify(&v,t)?;
           Ok(restore)
         },
         (false, true, d) => {
