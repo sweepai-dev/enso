@@ -1,17 +1,21 @@
 use std::iter::Iterator;
 use std::rc::Rc;
+use std::string::String;
 use enso_prelude::OptionOps;
 
 use crate::bwd::Bwd;
 use crate::fwd::Fwd;
 
-#[derive(PartialEq,Eq,PartialOrd,Ord,Copy,Clone,Hash,Debug)]
-pub struct TyName(u32);
+#[derive(PartialEq,Eq,PartialOrd,Ord,Clone,Hash,Debug)]
+pub enum TyName {
+  B(u32),
+  F(String)
+}
 
 // we're going to do too much copying for now because box patterns are too useful
 #[derive(PartialEq,Eq,PartialOrd,Ord,Clone,Hash,Debug)]
 pub enum Ty {
-  V(TyName),
+  V(TyName),     // free variable
   Arr(Type,Type) // i hate everything about this
 }
 
@@ -21,8 +25,42 @@ pub fn v(n: TyName) -> Type {
   Rc::new(Ty::V(n))
 }
 
-pub fn arr(arg: &Type, res: &Type) -> Type {
-  Rc::new(Ty::Arr(arg.clone(),res.clone()))
+pub fn arr(arg: Type, res: Type) -> Type {
+  Rc::new(Ty::Arr(arg,res))
+}
+
+// instantiate the next bound variable (replace it with a given type)
+// TODO: retain sharing if possible
+pub fn instantiate(x: TyName, t: Type) -> Type {
+  match t.as_ref() {
+    Ty::V(TyName::B(0)) => t,
+    Ty::V(TyName::B(n)) => v(TyName::B(n-1)),
+    Ty::V(TyName::F(y)) => v(TyName::F(*y)),
+    Ty::Arr(arg,res) => arr(instantiate(x,*arg),instantiate(x,*res))
+  }
+}
+
+
+// instantiate a bound variable (replace it with a given type)
+// TODO: retain sharing if possible
+pub fn instantiate_n(n: u32, x: TyName, t: Type) -> Type {
+  match t.as_ref() {
+    Ty::V(TyName::B(m)) if n == *m => t,
+    Ty::V(TyName::B(m)) if n < *m => v(TyName::B(m-1)), // decrease all larger numbers
+    Ty::V(TyName::B(m)) /* if n > *m */ => v(TyName::B(*m)),
+    Ty::V(TyName::F(y)) => v(TyName::F(*y)),
+    Ty::Arr(arg,res) => arr(instantiate(x,*arg),instantiate(x,*res))
+  }
+}
+
+// abstract a free variable (capture it as bound)
+// TODO: retain sharing if possible
+pub fn bind_type(x: String, t: Type) -> Type {
+  match t.as_ref() {
+    Ty::V(TyName::B(n)) => v(TyName::B(n+1)),
+    Ty::V(TyName::F(y)) => v(if *y == x { TyName::B(0) } else { TyName::F(*y) }),
+    Ty::Arr(arg,res) => arr(bind_type(x,*arg),bind_type(x,*res))
+  }
 }
 
 pub trait FTV {
@@ -82,7 +120,9 @@ impl FTV for TyEntry {
 
 #[derive(Debug,Clone)]
 pub enum Entry {
-  TY(TyEntry) // | ...
+  TY(TyEntry), // type level context entries
+  TM(TmEntry), // term level context entries
+  SEMI
 }
 
 pub type Ctx = Bwd<Entry>;
@@ -102,7 +142,6 @@ pub fn affix_mut(ctx: &mut Ctx, mut suffix: Suffix) {
     suffix = new_suffix;
   }
 }
-
 
 
 #[derive(Debug,Clone)]
@@ -234,4 +273,81 @@ impl Context {
       }
     })
   }
+
+  fn specialize(&mut self, s: Scheme) -> Type {
+    match s.as_ref() { 
+      Sc::Type(t) => t.clone(),
+      Sc::Forall(sp) => {
+        let beta = self.fresh(None);
+        self.specialize(instantiate_scheme(beta,sp))
+      }
+      Sc::Let(t,sp) => {
+        let beta = self.fresh(Some(t.clone()));
+        self.specialize(instantiate_scheme(beta,sp))
+      }
+    }
+  }
 }
+
+
+// type schemas (pre-boxy types)
+#[derive(PartialEq,Eq,PartialOrd,Ord,Clone,Hash,Debug)]
+pub enum Sc {
+  Type(Type),
+  Forall(Scheme),
+  Let(Type,Scheme)
+}
+
+
+type Scheme = Rc<Sc>;
+
+impl Sc {
+  pub fn ty(t: Type) -> Scheme {
+    Rc::new(Sc::Type(t))
+  }
+
+  // TODO: smart constructor that captures a name
+  pub fn forall(s: Scheme) -> Scheme {
+    Rc::new(Sc::Forall(s))
+  }
+
+  // TODO: smart constructor that captures a name
+  pub fn let_(t: Type, s: Scheme) -> Scheme {
+    Rc::new(Sc::Let(t,s))
+  }
+}
+
+pub fn instantiate_scheme_n(n: u32, x: TyName, s: Scheme) -> Scheme {
+  match s.as_ref() {
+    Sc::Type(t) => Sc::ty(instantiate_n(n,x,*t)),
+    Sc::Forall(sp) => Sc::forall(instantiate_scheme_n(n+1,x,*sp)),
+    Sc::Let(t,sp) => Sc::let_(instantiate_n(n,x,*t),instantiate_scheme_n(n+1,x,*sp))
+  }
+}
+
+// TODO: build a scheme binding all at once rather than work debruijn/bound style
+pub fn instantiate_scheme(x: TyName, s: Scheme) -> Scheme {
+  instantiate_scheme_n(0,x,s)
+}
+
+pub fn bind_suffix(e : Suffix, t : Type) -> Scheme {
+  panic!("ok")
+}
+
+
+#[derive(PartialEq,Eq,PartialOrd,Ord,Clone,Hash,Debug)]
+pub struct TmName(String);
+
+#[derive(PartialEq,Eq,PartialOrd,Ord,Clone,Hash,Debug)]
+pub enum Tm {
+  V(TmName),
+  App(Term,Term),
+  Lam(TmName,Term),
+  Let(TmName,Term,Term)
+}
+
+type Term = Rc<Tm>;
+
+#[derive(PartialEq,Eq,PartialOrd,Ord,Clone,Hash,Debug)]
+pub struct TmEntry(TmName,Scheme);
+

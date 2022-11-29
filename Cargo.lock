@@ -2452,6 +2452,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "enso-sets"
+version = "0.1.0"
+
+[[package]]
 name = "enso-shapely"
 version = "0.2.0"
 dependencies = [
@@ -6205,10 +6209,6 @@ dependencies = [
  "serde",
  "unsafe-libyaml",
 ]
-
-[[package]]
-name = "sets"
-version = "0.1.0"
 
 [[package]]
 name = "sha-1"
