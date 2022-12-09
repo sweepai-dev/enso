@@ -151,9 +151,6 @@ pub trait Entry: CloneRef + Debug + display::Object + 'static {
 
 /// The trait implemented by all shapes sharing the contour of an entry.
 pub trait ShapeWithEntryContour {
-    /// Padding added to the shape to avoid antialiasing issues.
-    const PADDING_PX: f32 = 5.0;
-
     /// Get the size parameter.
     fn size(&self) -> &ProxyParam<sprite::Size>;
 
@@ -162,8 +159,7 @@ pub trait ShapeWithEntryContour {
 
     /// Update shape's contour.
     fn set_contour(&self, contour: Contour) {
-        let padding = Vector2(Self::PADDING_PX, Self::PADDING_PX) * 2.0;
-        self.size().set(contour.size + padding);
+        self.size().set(contour.size);
         self.corner_radius().set(contour.corners_radius);
     }
 }
@@ -191,11 +187,8 @@ pub mod overlay {
 
     ensogl_core::shape! {
         (style:Style, corner_radius: f32) {
-            let shape_width  : Var<Pixels> = "input_size.x".into();
-            let shape_height : Var<Pixels> = "input_size.y".into();
-            let width = shape_width - 2.0.px() * View::PADDING_PX;
-            let height = shape_height - 2.0.px() * View::PADDING_PX;
-            Rect((width, height)).corners_radius(corner_radius.px()).fill(INVISIBLE_HOVER_COLOR).into()
+            let size = Var::canvas_size();
+            Rect(size).corners_radius(corner_radius.px()).fill(INVISIBLE_HOVER_COLOR).into()
         }
     }
 
@@ -213,11 +206,8 @@ pub mod shape {
     ensogl_core::shape! {
         below = [overlay, highlight::shape];
         (style:Style, corner_radius: f32, color: Vector4) {
-            let shape_width  : Var<Pixels> = "input_size.x".into();
-            let shape_height : Var<Pixels> = "input_size.y".into();
-            let width = shape_width - 2.0.px() * View::PADDING_PX;
-            let height = shape_height - 2.0.px() * View::PADDING_PX;
-            Rect((width, height)).corners_radius(corner_radius.px()).fill(color).into()
+            let size = Var::canvas_size();
+            Rect(size).corners_radius(corner_radius.px()).fill(color).into()
         }
     }
 
