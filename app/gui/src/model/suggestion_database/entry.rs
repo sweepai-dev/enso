@@ -842,8 +842,9 @@ impl From<&Entry> for span_tree::generate::context::CalledMethodInfo {
 pub fn to_span_tree_param(param_info: &Argument) -> span_tree::ArgumentInfo {
     span_tree::ArgumentInfo {
         // TODO [mwu] Check if database actually do must always have both of these filled.
-        name: Some(param_info.name.clone()),
-        tp:   Some(param_info.repr_type.clone()),
+        name:       Some(param_info.name.clone()),
+        tp:         Some(param_info.repr_type.clone()),
+        tag_values: param_info.tag_values.clone(),
     }
 }
 
@@ -1139,6 +1140,7 @@ mod test {
                 is_suspended:  false,
                 has_default:   false,
                 default_value: None,
+                tag_values:    Vec::new(),
             };
             let entry = Entry::new_method(defined_in, on_type, "entry", return_type, true)
                 .with_arguments(vec![argument])
@@ -1230,6 +1232,7 @@ mod test {
             is_suspended:  false,
             has_default:   false,
             default_value: None,
+            tag_values:    Vec::new(),
         };
         let add_argument =
             SuggestionArgumentUpdate::Add { index: 1, argument: new_argument.clone() };
