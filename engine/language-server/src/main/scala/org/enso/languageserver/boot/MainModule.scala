@@ -271,6 +271,7 @@ class MainModule(serverConfig: LanguageServerConfig, logLevel: LogLevel) {
     .newBuilder()
     .allowAllAccess(true)
     .allowExperimentalOptions(true)
+    .option("java.Polyglot", "true")
     .option(RuntimeServerInfo.ENABLE_OPTION, "true")
     .option(RuntimeOptions.INTERACTIVE_MODE, "true")
     .option(RuntimeOptions.PROJECT_ROOT, serverConfig.contentRootPath)

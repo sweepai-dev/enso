@@ -1,6 +1,7 @@
 package org.enso.compiler.codegen
 
 import com.oracle.truffle.api.source.{Source, SourceSection}
+import com.oracle.truffle.api.interop.InteropLibrary
 import org.enso.compiler.core.IR
 import org.enso.compiler.core.IR.Module.Scope.Import
 import org.enso.compiler.core.IR.Name.Special
@@ -189,11 +190,32 @@ class IrToTruffle(
 
     // Register the imports in scope
     imports.foreach {
-      case poly @ Import.Polyglot(i: Import.Polyglot.Java, _, _, _, _) =>
-        this.moduleScope.registerPolyglotSymbol(
-          poly.getVisibleName,
-          context.getEnvironment.lookupHostSymbol(i.getJavaName)
-        )
+      case poly @ Import.Polyglot(i: Import.Polyglot.Java, _, _, _, _) => {
+        val env = context.getEnvironment
+        try {
+          val symb = if ("hosted".equals(System.getenv("ENSO_JAVA"))) {
+            env.lookupHostSymbol(i.getJavaName)
+          } else {
+            val src = Source
+              .newBuilder("java", "<Bindings>", "getbindings.java")
+              .build();
+            val java = env.parsePublic(src).call();
+            InteropLibrary.getUncached().readMember(java, i.getJavaName);
+          }
+
+          this.moduleScope.registerPolyglotSymbol(
+            poly.getVisibleName,
+            symb
+          )
+        } catch {
+          case t: Throwable => {
+            System.err.println(
+              "Cannot register " + i.getJavaName + " by Espresso"
+            )
+            t.printStackTrace()
+          }
+        }
+      }
       case _: Import.Module =>
       case _: Error         =>
     }

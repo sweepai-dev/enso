@@ -19,7 +19,17 @@ public abstract class LookupClassNode extends Node {
 
   @Specialization
   Object doExecute(Object name, @Cached("build()") ExpectStringNode expectStringNode) {
-    return EnsoContext.get(this).getEnvironment().lookupHostSymbol(expectStringNode.execute(name));
+    var env = EnsoContext.get(this).getEnvironment();
+    if ("hosted".equals(System.getenv("ENSO_JAVA"))) {
+      return env.lookupHostSymbol(expectStringNode.execute(name));
+    }
+    System.out.println("Bindings: " + env.getPolyglotBindings());
+    Object java = env.importSymbol("java");
+    System.out.println("Java: " + java);
+    String symbol = expectStringNode.execute(name);
+    Object symb = env.importSymbol(symbol);
+    System.out.println("symb: " + symb);
+    return env.lookupHostSymbol(symbol);
   }
 
   abstract Object execute(Object name);
