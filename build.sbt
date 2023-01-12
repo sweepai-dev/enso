@@ -1688,7 +1688,8 @@ lazy val `engine-runner` = project
           "-H:IncludeResources=.*Main.enso$",
           "--macro:truffle",
           "--language:js",
-          //          "-g",
+          "--language:java",
+          "-g",
           //          "-H:+DashboardAll",
           //          "-H:DashboardDump=runner.bgv"
           "-Dnic=nic"
@@ -1699,7 +1700,18 @@ lazy val `engine-runner` = project
           // Note [WSLoggerManager Shutdown Hook]
           "org.enso.loggingservice.WSLoggerManager$",
           "io.methvin.watchservice.jna.CarbonAPI",
-          "org.enso.syntax2.Parser"
+          "org.enso.syntax2.Parser",
+          "org.enso.runner.Main$",
+          "akka.http.scaladsl.model.StatusCode$",
+          "akka.http.scaladsl.marshalling.Marshaller$",
+          "akka.http.scaladsl.marshalling.ToResponseMarshallable$",
+          "akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers$",
+          "akka.http.scaladsl.model.HttpEntity$",
+          "akka.http.scaladsl.model.HttpCharset$",
+          "akka.http.scaladsl.model.HttpCharsets$",
+          "akka.http.impl.engine.rendering.RenderSupport$",
+          "akka.http.scaladsl.model.MediaTypes$",
+          "akka.http.scaladsl.model.ContentTypes$"
         )
       )
       .dependsOn(installNativeImage)
