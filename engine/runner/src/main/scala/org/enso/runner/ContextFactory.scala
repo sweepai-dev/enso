@@ -42,6 +42,11 @@ class ContextFactory {
     enableAutoParallelism: Boolean         = false,
     options: java.util.Map[String, String] = java.util.Collections.emptyMap
   ): PolyglotContext = {
+    val javaHome = System.getenv("JAVA_HOME");
+    if (javaHome == null) {
+      throw new IllegalStateException("Specify JAVA_HOME environment property");
+    }
+
     val context = Context
       .newBuilder()
       .allowExperimentalOptions(true)
@@ -49,6 +54,7 @@ class ContextFactory {
       .option("java.ExposeNativeJavaVM", "true")
       .option("java.Polyglot", "true")
       .option("java.UseBindingsLoader", "true")
+      .option("java.JavaHome", javaHome)
       .option(RuntimeOptions.PROJECT_ROOT, projectRoot)
       .option(RuntimeOptions.STRICT_ERRORS, strictErrors.toString)
       .option(RuntimeOptions.WAIT_FOR_PENDING_SERIALIZATION_JOBS, "true")
