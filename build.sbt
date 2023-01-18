@@ -1685,6 +1685,7 @@ lazy val `engine-runner` = project
         staticOnLinux = false,
         additionalOptions = Seq(
           "-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.NoOpLog",
+          "-Dorg.graalvm.launcher.home=" + System.getProperty("java.home"),
           "-H:IncludeResources=.*Main.enso$",
           "--macro:truffle",
           "--language:js",
