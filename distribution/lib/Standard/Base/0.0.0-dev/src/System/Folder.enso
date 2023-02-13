@@ -1,0 +1,52 @@
+from Standard.Base import all
+
+type Folder
+    new : File | Text -> Text -> Boolean -> Folder
+    new path filter="*.*" recurse=False =
+        file = File.new path . normalize
+        Folder.Value file filter recurse
+
+    ## PRIVATE
+    Value path:File filter:Text="*.*" recurse:Boolean=False
+
+    ## Path to the folder
+    database : Text
+    database self = self.path.path
+
+    ## ALIAS sub-folders
+       List of sub-folder of the folder
+    databases : Vector Text
+    databases self =
+        ## Get the sub-folders
+        ["..", "."] + self.path.list recursive=self.recurse . filter _.is_directory . map _.name
+
+    set_database : Text -> Folder
+    set_database self new_path =
+        Folder.new (self.path / new_path) self.filter self.recurse
+
+    schemas : Vector Text
+    schemas self =
+        self.path.list recursive=self.recurse . filter _.is_regular_file . map _.extension . distinct . map e-> "*"+e
+
+    schema : Text
+    schema self = self.filter
+
+    set_schema : Text -> Folder
+    set_schema self new_filter =
+        Folder.Value self.path new_filter self.recurse
+
+    set_recurse : Boolean -> Folder
+    set_recurse self new_recurse =
+        Folder.Value self.path self.filter new_recurse
+
+    table_types : Vector Text
+    table_types self =
+        self.path.list self.schema recursive=self.recurse . filter _.is_regular_file . map _.extension . distinct
+
+    tables : Vector File
+    tables self =
+        self.path.list self.schema recursive=self.recurse . filter _.is_regular_file . map _.name
+
+    read : Text -> Any
+    read self name =
+        self.path / name . read

@@ -19,6 +19,8 @@ import project.Runtime
 import project.System
 import project.System.Environment
 import project.System.File.File
+import project.System.Folder.Folder
+export project.System.Folder.Folder
 import project.System.File.Existing_File_Behavior.Existing_File_Behavior
 import project.System.File.File_Access.File_Access
 import project.System.File.File_Permissions.File_Permissions
