@@ -22,6 +22,12 @@ import org.enso.logger.masking.MaskedPath
 import scala.jdk.OptionConverters._
 import scala.util.{Failure, Success, Using}
 
+import org.nustaq.serialization.{
+  FSTConfiguration,
+  FSTObjectInput,
+  FSTObjectOutput
+}
+
 // TODO Once #1971 is fixed, the logging statements should go back to using our
 //  normal templating syntax.
 
@@ -152,7 +158,7 @@ class ModuleCache(private val module: Module) {
     if (ensureRoot(cacheRoot)) {
       val byteStream: ByteArrayOutputStream = new ByteArrayOutputStream()
       val bytesToWrite =
-        Using.resource(new ObjectOutputStream(byteStream)) { stream =>
+        Using.resource(new FSTObjectOutput(byteStream)) { stream =>
           stream.writeObject(module.module)
           byteStream.toByteArray
         }
@@ -241,7 +247,7 @@ class ModuleCache(private val module: Module) {
 
         if (sourceDigestValid && blobDigestValid) {
           val readObject =
-            Using(new ObjectInputStream(new ByteArrayInputStream(blobBytes))) {
+            Using(new FSTObjectInput(new ByteArrayInputStream(blobBytes))) {
               _.readObject()
             }
 
@@ -487,6 +493,8 @@ class ModuleCache(private val module: Module) {
   }
 }
 object ModuleCache {
+
+  FSTConfiguration.createDefaultConfiguration
 
   val irCacheDataExtension: String     = ".ir"
   val irCacheMetadataExtension: String = ".meta"
