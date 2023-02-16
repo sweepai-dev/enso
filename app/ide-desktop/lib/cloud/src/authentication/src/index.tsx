@@ -21,7 +21,6 @@ import * as app from './components/app'
 import "./styles/index.css"
 
 
-
 // ===========
 // === run ===
 // ===========
@@ -37,7 +36,7 @@ interface Logger {
 
 /**
  * Entrypoint for the authentication/dashboard app.
- * 
+ *
  * Running this function finds a `div` element with the ID `authentication`, and renders the
  * authentication/dashboard UI using React. It also handles routing and other interactions (e.g.,
  * for redirecting the user to/from the login page).
@@ -58,4 +57,4 @@ export const run = (logger: Logger, props: AppProps) => {
 }
 
 export type AppProps = app.AppProps
-export default { run }
+export default {run}

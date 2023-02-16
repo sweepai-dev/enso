@@ -7,8 +7,10 @@ import globalConfig from '../../../../gui/config.yaml'
 import * as app from '../../../../../target/ensogl-pack/dist/index'
 import * as semver from 'semver'
 import * as authentication from 'enso-studio-authentication'
-import { AppProps } from 'enso-studio-authentication'
-import { Version, options } from 'enso-content-config'
+import * as dashboard from "enso-studio-cloud";
+import {AppProps} from 'enso-studio-authentication'
+import {Version, options} from 'enso-content-config'
+import {Auth} from "@aws-amplify/auth";
 
 const logger = app.log.logger
 
@@ -24,7 +26,7 @@ const timeout = (time: number) => {
 
 /** A version of `fetch` which timeouts after the provided time. */
 async function fetchTimeout(url: string, timeoutSeconds: number): Promise<any> {
-    return fetch(url, { signal: timeout(timeoutSeconds).signal }).then(response => {
+    return fetch(url, {signal: timeout(timeoutSeconds).signal}).then(response => {
         const statusCodeOK = 200
         if (response.status === statusCodeOK) {
             return response.json()
@@ -129,7 +131,14 @@ class Main {
                             appInstance.run()
                         }
                     }
-                    authentication.run(logger, props)
+                    Auth.currentSession()
+                        .then((data) => {
+                            dashboard.run(logger, {runningOnDesktop: true, entrypoint: () => {}, session: data})
+                        })
+                        .catch((err) => {
+                            logger.log("no auth")
+                            authentication.run(logger, props)
+                        })
                 } else {
                     appInstance.run()
                 }

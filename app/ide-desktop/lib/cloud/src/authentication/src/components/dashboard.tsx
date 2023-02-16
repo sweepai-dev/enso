@@ -4,11 +4,10 @@
  */
 
 import * as React from 'react'
-import { FC } from 'react'
-import { useAuth, useFullUserSession } from '../authentication';
+import {FC} from 'react'
+import {useAuth, useFullUserSession} from '../authentication';
 
 import withRouter from '../navigation'
-
 
 
 // ==========================
@@ -16,8 +15,8 @@ import withRouter from '../navigation'
 // ==========================
 
 const dashboardContainer: FC = () => {
-    const { signOut } = useAuth();
-    const { email } = useFullUserSession();
+    const {signOut} = useAuth();
+    const {email} = useFullUserSession();
 
     return (
         <div>

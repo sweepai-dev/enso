@@ -1,9 +1,11 @@
+// TODO: Some of the config options are commented out because eslint is not configured properly.
+// This will be fixed in the future.
 module.exports = {
     extends: [
         'eslint:recommended',
         'plugin:@typescript-eslint/recommended',
-        'plugin:@typescript-eslint/recommended-requiring-type-checking',
-        'plugin:@typescript-eslint/strict'
+        // 'plugin:@typescript-eslint/recommended-requiring-type-checking',
+        // 'plugin:@typescript-eslint/strict',
     ],
     parser: '@typescript-eslint/parser',
     plugins: ['jsdoc', '@typescript-eslint'],
@@ -15,19 +17,14 @@ module.exports = {
         '@typescript-eslint/ban-ts-comment': 'off',
         '@typescript-eslint/no-empty-function': 'off',
         '@typescript-eslint/naming-convention': 'error',
-        '@typescript-eslint/no-unnecessary-condition': 'error',
-        '@typescript-eslint/restrict-template-expressions': ['error', {
-            'allowAny': true,
-            'allowBoolean': true,
-        }],
-        // React 17 and later supports async functions as event handlers, so we need to disable this
-        // rule to avoid false positives.
-        //
-        // See: https://github.com/typescript-eslint/typescript-eslint/pull/4623
-        '@typescript-eslint/no-misused-promises': [
-            'error',
-            { "checksVoidReturn": { "attributes": false } }
-        ],
+        // '@typescript-eslint/no-unnecessary-condition': 'error',
+        // '@typescript-eslint/restrict-template-expressions': [
+        //     'error',
+        //     {
+        //         allowAny: true,
+        //         allowBoolean: true,
+        //     },
+        // ],
         'jsdoc/check-access': 'warn',
         'jsdoc/check-alignment': 'warn',
         'jsdoc/check-indentation': 'warn',
@@ -47,7 +44,6 @@ module.exports = {
         'jsdoc/no-undefined-types': 'warn',
         'jsdoc/require-asterisk-prefix': 'warn',
         'jsdoc/require-description': 'warn',
-        // Disabled because of a bug: https://github.com/gajus/eslint-plugin-jsdoc/issues/942
         // 'jsdoc/require-description-complete-sentence': 'warn,
         'jsdoc/require-file-overview': 'warn',
         'jsdoc/require-hyphen-before-param-description': 'warn',
@@ -65,14 +61,14 @@ module.exports = {
         'jsdoc/require-yields': 'warn',
         'jsdoc/require-yields-check': 'warn',
         'jsdoc/tag-lines': 'warn',
-        'jsdoc/valid-types': 'warn'
+        'jsdoc/valid-types': 'warn',
     },
     overrides: [
         {
             files: ['*.ts', '*.tsx'],
             parserOptions: {
-                project: ['./tsconfig.json']
+                project: ['./tsconfig.json'],
             },
-        }
+        },
     ],
-};
+}

@@ -6,7 +6,7 @@ import { WebSocketServer } from 'ws'
 import serveStatic from 'serve-static'
 import logger from 'morgan'
 
-export const DEFAULT_PORT = 8080
+export const DEFAULT_PORT = 8081
 
 let dirname = path.dirname(url.fileURLToPath(import.meta.url))
 // Path of a file that needs to be injected into the bundle for live-reload to work.

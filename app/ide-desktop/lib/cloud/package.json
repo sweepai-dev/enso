@@ -1,7 +1,7 @@
 {
   "name": "enso-studio-cloud",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0",
+  "main": "./src/index.tsx",
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
@@ -10,6 +10,7 @@
     "@types/node": "^16.18.11",
     "@types/react": "^18.0.27",
     "@types/react-dom": "^18.0.10",
+    "@heroicons/react": "^2.0.15",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.7.0",
@@ -20,6 +21,9 @@
     "@typescript-eslint/eslint-plugin": "^5.49.0",
     "@typescript-eslint/parser": "^5.49.0",
     "enso-studio-authentication": "^1.0.0",
+    "enso-cloud-utils": "^1.0.0",
+    "amazon-cognito-identity-js": "6.1.2",
+    "@aws-amplify/auth": "^5.1.8",
     "eslint": "^8.32.0",
     "eslint-plugin-jsdoc": "^39.6.8",
     "eslint-plugin-react": "^7.32.1",

@@ -1,5 +1,4 @@
-import { useState } from "react";
-
+import {useState} from "react";
 
 
 // ================
@@ -29,4 +28,4 @@ const useInput = (initialValue: string) => {
     };
 }
 
-export { useInput }
+export {useInput}

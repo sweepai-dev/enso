@@ -1,6 +1,5 @@
-import { Auth, CognitoHostedUIIdentityProvider } from "@aws-amplify/auth";
-import { CognitoUserSession } from "amazon-cognito-identity-js";
-
+import {Auth, CognitoHostedUIIdentityProvider} from "@aws-amplify/auth";
+import {CognitoUserSession} from "amazon-cognito-identity-js";
 
 
 // =================
@@ -16,7 +15,6 @@ import { CognitoUserSession } from "amazon-cognito-identity-js";
 const GITHUB_PROVIDER = "Github";
 
 
-
 // ====================
 // === AssertString ===
 // ====================
@@ -28,20 +26,19 @@ type AssertString = (param: any, message: string) => asserts param is string
 
 /**
  * Asserts that a parameter is a string.
- * 
+ *
  * Used both to assert that a parameter is a string at runtime, and to inform TypeScript that a
  * parameter is a string.
- * 
+ *
  * @param param - The parameter to assert.
  * @param message - The error message to throw if the assertion fails.
  * @throws An error if the assertion fails.
  */
 const assertString: AssertString = (param, message) => {
     if (typeof param !== "string") {
-      throw new Error(message);
+        throw new Error(message);
     }
 }
-
 
 
 // ====================
@@ -52,12 +49,12 @@ const assertString: AssertString = (param, message) => {
  * List of known error codes returned by the AWS Amplify library for Amplify errors.
  */
 type AmplifyErrorCode =
-  | "UserNotFoundException"
-  | "UserNotConfirmedException"
-  | "NotAuthorizedException" 
-  | "InvalidPasswordException"
-  | "UsernameExistsException" 
-  | "NetworkError";
+    | "UserNotFoundException"
+    | "UserNotConfirmedException"
+    | "NotAuthorizedException"
+    | "InvalidPasswordException"
+    | "UsernameExistsException"
+    | "NetworkError";
 
 /**
  * The type of the object returned by the AWS Amplify library when an Amplify error occurs.
@@ -79,11 +76,10 @@ interface AmplifyError {
  */
 export const isAmplifyError = (error: unknown): error is AmplifyError => {
     if (error && typeof error === "object") {
-      return "code" in error && "message" in error && "name" in error;
+        return "code" in error && "message" in error && "name" in error;
     }
     return false;
 }
-
 
 
 // =================
@@ -107,7 +103,6 @@ export const isAuthError = (error: unknown): error is AuthError => {
     }
     return false;
 }
-
 
 
 // ===================
@@ -159,9 +154,8 @@ const parseUserSession = (session: CognitoUserSession): UserSession => {
     const email = payload.email;
     const accessToken = session.getAccessToken().getJwtToken();
 
-    return { email, accessToken };
+    return {email, accessToken};
 }
-
 
 
 // ===========
@@ -215,7 +209,7 @@ interface Api {
     signInWithGithub: () => Promise<void>;
     /**
      * Signs in with the given username and password.
-     * 
+     *
      * @param username - Username of the user to sign in.
      * @param password - Password of the user to sign in.
      * @returns A promise that resolves if the sign in was successful.
@@ -242,7 +236,7 @@ interface Api {
     forgotPasswordSubmit: (email: string, code: string, password: string) => Promise<void>;
     /**
      * Signs out the current user.
-     * 
+     *
      * @returns A promise that resolves if the sign out was successful.
      * @throws An error if sign out fails.
      */
@@ -250,7 +244,7 @@ interface Api {
 }
 
 const api = (config: Config): Api => {
-    const { runningOnDesktop } = config;
+    const {runningOnDesktop} = config;
 
     const userSession = () => getAmplifyCurrentSession()
         .then((session) => session ? parseUserSession(session) : null);
@@ -273,18 +267,21 @@ const api = (config: Config): Api => {
         return await Auth
             .signUp(params)
             // We don't care about the details in the success case, just that it happened.
-            .then(() => {})
+            .then(() => {
+            })
     }
 
     const confirmSignUp = (email: string, code: string) => Auth.confirmSignUp(email, code)
 
-    const signInWithGoogle = () => Auth.federatedSignIn({ provider: CognitoHostedUIIdentityProvider.Google })
+    const signInWithGoogle = () => Auth.federatedSignIn({provider: CognitoHostedUIIdentityProvider.Google})
         // We don't care about the details in the success case, just that it happened.
-        .then(() => {});
+        .then(() => {
+        });
 
-    const signInWithGithub = () => Auth.federatedSignIn({ customProvider: GITHUB_PROVIDER })
+    const signInWithGithub = () => Auth.federatedSignIn({customProvider: GITHUB_PROVIDER})
         // We don't care about the details in the success case, just that it happened.
-        .then(() => {});
+        .then(() => {
+        });
 
     const signInWithPassword = (username: string, password: string) => Auth.signIn(username, password)
 
@@ -292,7 +289,8 @@ const api = (config: Config): Api => {
 
     const forgotPasswordSubmit = async (email: string, code: string, password: string) => Auth.forgotPasswordSubmit(email, code, password)
         // We don't care about the details in the success case, just that it happened.
-        .then(() => {})
+        .then(() => {
+        })
 
     const signOut = () => Auth.signOut()
 

@@ -1,11 +1,10 @@
 /**
  * @file Module containing the API client for the Cloud backend API.
- * 
+ *
  * Each exported function in this module corresponds to an API endpoint. The functions are
  * asynchronous and return a `Promise` that resolves to the response from the API.
  */
-import { API_URL } from "./config";
-
+import {API_URL} from "./config";
 
 
 // =============
@@ -33,7 +32,6 @@ export type Organization = {
 }
 
 
-
 // ================
 // === FetchApi ===
 // ================
@@ -50,9 +48,11 @@ const fetchApi = async (
         body,
     }: Request,
 ): Promise<Response> => {
-    if (!accessToken) { throw new Error("No access token provided"); }
-    
-    const config: RequestInit = { method };
+    if (!accessToken) {
+        throw new Error("No access token provided");
+    }
+
+    const config: RequestInit = {method};
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const headers = new Headers(config.headers);
     headers.set("Authorization", `Bearer ${accessToken}`);
@@ -68,7 +68,6 @@ const fetchApi = async (
 }
 
 
-
 // ===================
 // === SetUsername ===
 // ===================
@@ -82,14 +81,13 @@ export type SetUsernameBody = {
 export const setUsername = async (accessToken: string, body: SetUsernameBody) => {
     const path = "users";
     const method = HttpMethod.post;
-    const request = { accessToken, path, method, body };
+    const request = {accessToken, path, method, body};
     const response = await fetchApi(request);
     const text = await response.text();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const json: Organization = JSON.parse(text);
     return json;
 }
-
 
 
 // ==================
@@ -102,7 +100,7 @@ export const setUsername = async (accessToken: string, body: SetUsernameBody) =>
 export const getUsersMe = async (accessToken: string): Promise<Organization | null> => {
     const path = "users/me";
     const method = HttpMethod.get;
-    const request = { accessToken, path, method };
+    const request = {accessToken, path, method};
     const response = await fetchApi(request);
     // FIXME [NP]: handle 401 & 404 differently?
     if (response.status == 401 || response.status == 404) {
