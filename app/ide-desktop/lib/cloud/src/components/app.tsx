@@ -54,7 +54,7 @@ const App = (_: AppProps) => {
     if (accessToken && userEmail) {
         return <DashboardContainer accessToken={accessToken} email={userEmail}/>
     } else {
-        throw new Error("Unauthorized")
+        return <div>LOADING</div>
     }
 
 }

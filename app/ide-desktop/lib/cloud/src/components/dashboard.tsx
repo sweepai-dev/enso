@@ -53,7 +53,7 @@ const DashboardContainer: FC<UserSession> = (props: UserSession) => {
 
 
     const signOut = () => {
-        Auth.signOut().then(window.location.reload);
+        Auth.signOut().then(()=>{window.location.reload()});
     };
 
     const handleCreateProject = async (templateName: string | undefined) => {

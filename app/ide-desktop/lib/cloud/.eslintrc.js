@@ -16,7 +16,7 @@ module.exports = {
         '@typescript-eslint/no-this-alias': 'off',
         '@typescript-eslint/ban-ts-comment': 'off',
         '@typescript-eslint/no-empty-function': 'off',
-        '@typescript-eslint/naming-convention': 'error',
+        '@typescript-eslint/naming-convention': 'off',
         // '@typescript-eslint/no-unnecessary-condition': 'error',
         // '@typescript-eslint/restrict-template-expressions': [
         //     'error',

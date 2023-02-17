@@ -9,6 +9,8 @@ import * as authentication from 'enso-studio-authentication'
 
 import {AppProps, UnauthorizedError} from "./components/app";
 import App from "./components/app";
+import {Auth} from "@aws-amplify/auth";
+import {getUsersMe} from "./cloud-utils/src";
 
 
 // ===========
@@ -43,23 +45,35 @@ export const run = (logger: Logger, props: AppProps) => {
     // we can disable the `no-non-null-assertion` on this line.
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const root: HTMLElement = document.getElementById(rootElementId)!
-    try {
-        ReactDOM.createRoot(root).render(<App {...props} />);
-
-    } catch {
-        console.log("adsad")
-        authentication.run(console, {
-            runningOnDesktop: false, onAuthenticated: () => {
-                window.location.reload()
-            }
-        })
-    }
+    ReactDOM.createRoot(root).render(<App {...props} />);
 }
 
-run(console, {
-    runningOnDesktop: false, entrypoint: () => {
-    }
-})
+const init_auth = () => {
+    authentication.run({
+        logger: console,
+        runningOnDesktop: false,
+        onAuthenticated: () => {
+            window.location.reload();
+        }
+    })
+}
+
+Auth.currentSession()
+    .then((data) => {
+        getUsersMe(data.getAccessToken().getJwtToken()).then((user) => {
+            if (user) {
+                run(console, {
+                    runningOnDesktop: false, entrypoint: () => {
+                    }
+                })
+            } else {
+                init_auth()
+            }
+        })
+    })
+    .catch((_) => {
+        init_auth()
+    })
 
 
 export default {run}

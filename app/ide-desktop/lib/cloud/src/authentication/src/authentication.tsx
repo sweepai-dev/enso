@@ -322,7 +322,7 @@ export const AuthProvider = (props: AuthProviderProps): JSX.Element => {
     const setUsername = async (accessToken: string, username: string, email: string) => {
         const body: SetUsernameBody = { userName: username, userEmail: email };
         await api.setUsername(accessToken, body);
-        navigate(DASHBOARD_PATH);
+        onAuthenticated();
         toast.success(SET_USERNAME_SUCCESS);
     };
 
