@@ -17,6 +17,7 @@
   "private": true,
   "workspaces": [
     "lib/client",
+    "lib/cloud/src/cloud-utils",
     "lib/cloud",
     "lib/cloud/src/authentication",
     "lib/content",
