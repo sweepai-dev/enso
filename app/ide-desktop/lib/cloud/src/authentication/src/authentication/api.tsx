@@ -1,4 +1,4 @@
-import { Auth, CognitoHostedUIIdentityProvider } from "@aws-amplify/auth";
+import {Auth, CognitoHostedUIIdentityProvider, SignUpParams} from "@aws-amplify/auth";
 import { CognitoUserSession } from "amazon-cognito-identity-js";
 import { DASHBOARD_PATH, Logger, LOGIN_PATH } from "../components/app";
 import { AwsCognitoOAuthOpts } from "@aws-amplify/auth/lib-esm/types";
@@ -262,7 +262,7 @@ const api = (authConfig: AuthConfig): Api => {
         .then((session) => session ? parseUserSession(session) : null);
 
     const signUp = async (username: string, password: string) => {
-        const params = {
+        const params: SignUpParams = {
             username,
             password,
             attributes: {
@@ -274,6 +274,10 @@ const api = (authConfig: AuthConfig): Api => {
                 // eslint-disable-next-line @typescript-eslint/naming-convention
                 "custom:fromDesktop": runningOnDesktop ? "true" : "false",
             }
+        }
+
+        if (!runningOnDesktop) {
+            delete params.attributes!["custom:fromDesktop" as keyof object];
         }
 
         return await Auth
