@@ -50,3 +50,11 @@ contextBridge.exposeInMainWorld('enso_console', {
     // Print an error message with `console.error`.
     error: (data: any) => ipcRenderer.send('error', data),
 })
+
+// Access to the login API for the purpose of opening OAuth flows in the system browser.
+// FIXME [NP]: move this to the `authentication` package.
+contextBridge.exposeInMainWorld('loginApi', {
+    openExternalUrl: (url: string) => ipcRenderer.send(ipc.channel.openExternalUrl, url),
+    // FIXME [NP]: remove args?
+    setAuthenticatedRedirectCallback: (callback: (url: string) => void) => ipcRenderer.on(ipc.channel.authenticatedRedirect, (event, url, ...args) => callback(url)),
+});

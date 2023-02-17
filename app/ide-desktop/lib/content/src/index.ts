@@ -123,6 +123,7 @@ class Main {
                     //    root?.style = 'display: block'
                     //}
                     const props: AppProps = {
+                        logger,
                         // This package is an Electron desktop app (i.e., not in the Cloud), so
                         // we're running on the desktop.
                         runningOnDesktop: true,
@@ -131,6 +132,7 @@ class Main {
                             appInstance.run()
                         }
                     }
+<<<<<<< HEAD
                     Auth.currentSession()
                         .then((data) => {
                             dashboard.run(logger, {runningOnDesktop: true, entrypoint: () => {}, session: data})
@@ -139,6 +141,9 @@ class Main {
                             logger.log("no auth")
                             authentication.run(logger, props)
                         })
+=======
+                    authentication.run(props)
+>>>>>>> wip/npekin/cognito-auth-183351503-1
                 } else {
                     appInstance.run()
                 }

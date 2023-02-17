@@ -12,4 +12,7 @@ export const channel = {
     profilesLoaded: 'profiles-loaded',
     saveProfile: 'save-profile',
     quit: 'quit-ide',
+    openExternalUrl: 'open-external-url',
+    setAuthenticatedRedirectCallback: 'set-authenticated-redirect-callback',
+    authenticatedRedirect: 'authenticated-redirect',
 }
