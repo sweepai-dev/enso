@@ -39,7 +39,7 @@ export const ProjectActionButton: React.FC<props> = (props) => {
         await openProject(accessToken, project.projectId, {forceCreate: false});
 
         const checkProjectStatus = async () => {
-            let response = await getProject(accessToken, project.projectId);
+            const response = await getProject(accessToken, project.projectId);
 
             if (response?.state.type === ProjectState.Opened) {
                 setHasProjectOpened(true);
@@ -74,7 +74,7 @@ export const ProjectActionButton: React.FC<props> = (props) => {
         case ProjectState.OpenInProgress:
             if (!checkStatusInterval && accessToken) {
                 const checkProjectStatus = async () => {
-                    let response = await getProject(
+                    const response = await getProject(
                         accessToken,
                         project.projectId
                     );
