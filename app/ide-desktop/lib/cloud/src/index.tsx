@@ -7,10 +7,25 @@ import * as React from "react";
 
 import * as authentication from 'enso-studio-authentication'
 
-import {AppProps, UnauthorizedError} from "./components/app";
+import {AppProps} from "./components/app";
 import App from "./components/app";
 import {Auth} from "@aws-amplify/auth";
 import {getUsersMe} from "./cloud-utils/src";
+
+const amplifyConfig = {
+    region: process.env.REACT_APP_AUTH_USER_POOL_ID,
+    userPoolId: process.env.REACT_APP_AUTH_USER_POOL_ID,
+    userPoolWebClientId: process.env.REACT_APP_AUTH_USER_POOL_WEB_CLIENT_ID,
+    oauth: {
+        domain: process.env.REACT_APP_AUTH_DOMAIN,
+        scope: ['email', 'openid'],
+        redirectSignIn: process.env.REACT_APP_AUTH_REDIRECT_SIGN_IN,
+        redirectSignOut: process.env.REACT_APP_AUTH_REDIRECT_SIGN_OUT,
+        responseType: "code",
+    },
+}
+
+Auth.configure(amplifyConfig);
 
 
 // ===========
@@ -63,8 +78,7 @@ Auth.currentSession()
         getUsersMe(data.getAccessToken().getJwtToken()).then((user) => {
             if (user) {
                 run(console, {
-                    runningOnDesktop: false, entrypoint: () => {
-                    }
+                    runningOnDesktop: false, entrypoint: () => {}
                 })
             } else {
                 init_auth()
