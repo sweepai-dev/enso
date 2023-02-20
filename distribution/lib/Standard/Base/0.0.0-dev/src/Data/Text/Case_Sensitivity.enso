@@ -25,3 +25,11 @@ type Case_Sensitivity
         Case_Sensitivity.Sensitive -> TextFoldingStrategy.unicodeNormalizedFold
         Case_Sensitivity.Insensitive locale ->
             TextFoldingStrategy.caseInsensitiveFold locale.java_locale
+
+    ## PRIVATE
+       Is case insensitive.
+    is_case_insensitive : Boolean
+    is_case_insensitive self = case self of
+        Case_Sensitivity.Default -> False
+        Case_Sensitivity.Sensitive -> False
+        Case_Sensitivity.Insensitive _ -> True
