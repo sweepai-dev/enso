@@ -16,11 +16,18 @@ import ProjectActionButton from "./projectActionButton";
 import Table from "./table";
 import PermissionDisplay, * as permissionDisplay from "./permissionDisplay";
 import Label, * as label from "./label";
+import Ide from "./ide";
 import * as loggerProvider from "../../providers/logger";
 
 // =============
 // === Types ===
 // =============
+
+/** Main content of the screen. Only one should be visible at a time. */
+enum Tab {
+    dashboard = "dashboard",
+    ide = "ide",
+}
 
 /** Column type. */
 export enum Column {
@@ -85,6 +92,10 @@ const Dashboard = (props: Props) => {
     const [projectsList, setProjectsList] = React.useState<
         backend.ListedProject[]
     >([]);
+    const [tab, setTab] = React.useState(Tab.dashboard);
+    const [project, setProject] = React.useState<backend.Project | undefined>(
+        undefined
+    );
 
     const renderers: Record<
         Column,
@@ -94,6 +105,10 @@ const Dashboard = (props: Props) => {
             <div className="flex text-left items-center align-middle whitespace-nowrap">
                 <ProjectActionButton
                     project={item}
+                    openIde={() => {
+                        setTab(Tab.ide);
+                        setProject(project);
+                    }}
                     onOpen={() =>
                         setProjectState(index, backend.ProjectState.opened)
                     }
@@ -250,22 +265,31 @@ const Dashboard = (props: Props) => {
 
     return (
         <>
-            <Templates onChange={handleCreateProject} />
-            <Table<backend.ListedProject>
-                items={projectsList}
-                getKey={(proj) => proj.projectId}
-                placeholder={
-                    <>
-                        You have no project yet. Go ahead and create one using
-                        the form above.
-                    </>
-                }
-                columns={ALL_COLUMNS.map((column) => ({
-                    id: column,
-                    name: COLUMN_NAME[column],
-                    render: renderers[column],
-                }))}
-            />
+            <div className={tab === Tab.dashboard ? "" : "hidden"}>
+                <Templates onChange={handleCreateProject} />
+                <Table<backend.ListedProject>
+                    items={projectsList}
+                    getKey={(proj) => proj.projectId}
+                    placeholder={
+                        <>
+                            You have no project yet. Go ahead and create one
+                            using the form above.
+                        </>
+                    }
+                    columns={ALL_COLUMNS.map((column) => ({
+                        id: column,
+                        name: COLUMN_NAME[column],
+                        render: renderers[column],
+                    }))}
+                />
+            </div>
+            {project ? (
+                <div className={tab === Tab.ide ? "" : "hidden"}>
+                    <Ide backendService={backendService} project={project} />
+                </div>
+            ) : (
+                <></>
+            )}
             <button onClick={signOut}>Log out</button>
         </>
     );
