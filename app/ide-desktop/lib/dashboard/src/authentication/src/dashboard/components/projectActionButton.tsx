@@ -59,19 +59,23 @@ const ARROW_UP_ICON = (
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
     >
-        <path
-            d="m10 12L8.4 12a1 1 0 0 1 -0.719 -1.695L11.281 6.719a1 1 0 0 1 1.409 0L16.305 10.305a1 1 0 0 1 -0.719 1.695L14 12 14 15.5a1 1 0 0 1 -1 1L11 16.5a1 1 0 0 1 -1 -1"
-            fill="currentColor"
-        />
         <rect
-            x={1.5}
-            y={1.5}
             width={21}
             height={21}
+            x={1.5}
+            y={1.5}
             rx={10.5}
             stroke="currentColor"
             strokeOpacity={0.1}
             strokeWidth={3}
+        />
+        <path
+            d="M12 17a1.5 1.5 0 0 1-1.5-1.5V12h3v3.5A1.5 1.5 0 0 1 12 17Z"
+            fill="currentColor"
+        />
+        <path
+            d="M8.943 12a1 1 0 0 1-.814-1.581l3.057-4.28a1 1 0 0 1 1.628 0l3.056 4.28A1 1 0 0 1 15.057 12H8.943Z"
+            fill="currentColor"
         />
     </svg>
 );
@@ -160,7 +164,9 @@ const ProjectActionButton = ({
         void backendService.openProject(project.projectId);
 
         const checkProjectStatus = async () => {
-            const response = await backendService.getProjectDetails(project.projectId);
+            const response = await backendService.getProjectDetails(
+                project.projectId
+            );
 
             if (response.state.type === backend.ProjectState.opened) {
                 setCheckStatusInterval(undefined);
@@ -188,11 +194,9 @@ const ProjectActionButton = ({
             return <button onClick={handleOpenProject}>{PLAY_ICON}</button>;
         case backend.ProjectState.openInProgress:
             return (
-                <>
-                    <button onClick={handleCloseProject}>
-                        {stopIcon(spinnerState)}
-                    </button>
-                </>
+                <button onClick={handleCloseProject}>
+                    {stopIcon(spinnerState)}
+                </button>
             );
         case backend.ProjectState.opened:
             return (
@@ -200,7 +204,6 @@ const ProjectActionButton = ({
                     <button onClick={handleCloseProject}>
                         {stopIcon(spinnerState)}
                     </button>
-
                     <button onClick={openIde}>{ARROW_UP_ICON}</button>
                 </>
             );

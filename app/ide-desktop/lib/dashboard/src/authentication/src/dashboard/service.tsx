@@ -105,18 +105,6 @@ export interface UserOrOrganization {
     email: EmailAddress;
 }
 
-export enum VersionLifecycle {
-    stable = "Stable",
-    releaseCandidate = "ReleaseCandidate",
-    nightly = "Nightly",
-    development = "Development",
-}
-
-export interface VersionNumber {
-    value: string;
-    lifecycle: VersionLifecycle;
-}
-
 /** Possible states that a project can be in. */
 export enum ProjectState {
     created = "Created",
@@ -233,6 +221,21 @@ export enum VersionType {
     ide = "Ide",
 }
 
+/** Stability of an IDE or backend version. */
+export enum VersionLifecycle {
+  stable = "Stable",
+  releaseCandidate = "ReleaseCandidate",
+  nightly = "Nightly",
+  development = "Development",
+}
+
+
+/** Version number of an IDE or backend. */
+export interface VersionNumber {
+  value: string;
+  lifecycle: VersionLifecycle;
+}
+
 /** A version describing a release of the backend or IDE. */
 export interface Version {
     number: VersionNumber;
@@ -340,6 +343,16 @@ interface ListTagsResponseBody {
 /** HTTP response body for the "list versions" endpoint. */
 interface ListVersionsResponseBody {
     versions: Version[];
+}
+
+export interface ListVersionsRequestParams {
+  versionType: VersionType;
+  default: boolean;
+}
+
+/** HTTP response body for the "list versions" endpoint. */
+interface ListVersionsResponseBody {
+  versions: Version[];
 }
 
 

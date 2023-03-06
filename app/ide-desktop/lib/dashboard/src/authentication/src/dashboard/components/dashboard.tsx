@@ -101,13 +101,17 @@ const Dashboard = (props: Props) => {
         Column,
         (project: backend.ListedProject, index: number) => JSX.Element
     > = {
-        [Column.projects]: (item, index) => (
+        [Column.projects]: (project, index) => (
             <div className="flex text-left items-center align-middle whitespace-nowrap">
                 <ProjectActionButton
-                    project={item}
-                    openIde={() => {
+                    project={project}
+                    openIde={async () => {
                         setTab(Tab.ide);
-                        setProject(project);
+                        setProject(
+                            await backendService.getProjectDetails(
+                                project.projectId
+                            )
+                        );
                     }}
                     onOpen={() =>
                         setProjectState(index, backend.ProjectState.opened)
@@ -122,7 +126,7 @@ const Dashboard = (props: Props) => {
                         setProjectState(index, backend.ProjectState.closed)
                     }
                 />
-                <span className="px-4">{item.name}</span>
+                <span className="px-4">{project.name}</span>
             </div>
         ),
         [Column.lastModified]: () => <>aa</>,
