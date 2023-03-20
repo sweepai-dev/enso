@@ -46,6 +46,19 @@ gc = @Builtin_Method "Runtime.gc"
 
 ## ADVANCED
 
+   Asserts that the given action succeeds, otherwise throws a panic.
+
+   Assertions are disable by default, meaning that call to this method is
+   essentially a no-op. To enable assertions, set the environment variable
+   `ENSO_ENABLE_ASSERTIONS=true`
+assert : (Any -> Boolean) -> Text -> Nothing
+assert ~action msg="" =
+    if assertions_enabled_builtin.not then Nothing else
+        if action.not then Panic.throw ("Assertion Error: " + msg) else
+            Nothing
+
+## ADVANCED
+
    Executes the provided action without allowing it to inline.
 
    Arguments:
