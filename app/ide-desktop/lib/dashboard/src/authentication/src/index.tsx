@@ -13,7 +13,6 @@
 import * as React from 'react'
 import * as reactDOM from 'react-dom/client'
 
-import * as loggerProvider from './providers/logger'
 import * as platformModule from './platform'
 import App, * as app from './components/app'
 
@@ -37,12 +36,8 @@ const IDE_ELEMENT_ID = 'root'
  * for redirecting the user to/from the login page). */
 // This is not a React component even though it contains JSX.
 // eslint-disable-next-line no-restricted-syntax
-export function run(
-    /** Logger to use for logging. */
-    logger: loggerProvider.Logger,
-    platform: platformModule.Platform,
-    onAuthenticated: () => void
-) {
+export function run(props: app.AppProps) {
+    const { logger } = props
     logger.log('Starting authentication/dashboard UI.')
     /** The root element that the authentication/dashboard app will be rendered into. */
     const root = document.getElementById(ROOT_ELEMENT_ID)
@@ -55,7 +50,6 @@ export function run(
         if (ide != null) {
             ide.style.display = 'none'
         }
-        const props = { logger, platform, onAuthenticated }
         reactDOM.createRoot(root).render(<App {...props} />)
     }
 }
