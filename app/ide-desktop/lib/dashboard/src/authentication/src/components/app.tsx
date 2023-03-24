@@ -136,6 +136,7 @@ function AppRouter(props: AppProps) {
     }, [navigate, props])
     const userSession = memoizedAuthService.cognito.userSession.bind(memoizedAuthService.cognito)
     const registerAuthEventListener = memoizedAuthService.registerAuthEventListener
+
     return (
         <loggerProvider.LoggerProvider logger={logger}>
             <session.SessionProvider
