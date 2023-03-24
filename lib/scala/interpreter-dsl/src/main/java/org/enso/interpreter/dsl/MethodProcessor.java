@@ -120,6 +120,7 @@ public class MethodProcessor extends BuiltinsMetadataProcessor<MethodProcessor.M
   private final List<String> necessaryImports =
       Arrays.asList(
           "com.oracle.truffle.api.frame.VirtualFrame",
+          "com.oracle.truffle.api.interop.UnsupportedMessageException",
           "com.oracle.truffle.api.nodes.NodeInfo",
           "com.oracle.truffle.api.nodes.RootNode",
           "com.oracle.truffle.api.nodes.UnexpectedResultException",
@@ -136,6 +137,7 @@ public class MethodProcessor extends BuiltinsMetadataProcessor<MethodProcessor.M
           "org.enso.interpreter.runtime.error.PanicException",
           "org.enso.interpreter.runtime.error.Warning",
           "org.enso.interpreter.runtime.error.WithWarnings",
+          "org.enso.interpreter.runtime.error.WarningsLibrary",
           "org.enso.interpreter.runtime.state.State",
           "org.enso.interpreter.runtime.type.TypesGen");
 
@@ -160,6 +162,9 @@ public class MethodProcessor extends BuiltinsMetadataProcessor<MethodProcessor.M
       out.println("public class " + methodDefinition.getClassName() + " extends BuiltinRootNode {");
       out.println("  private @Child " + methodDefinition.getOriginalClassName() + " bodyNode;");
       out.println("  private final boolean staticOfInstanceMethod;");
+      out.printf(
+          "  private @Child WarningsLibrary %s = WarningsLibrary.getFactory().createDispatched(%d);\n",
+          WARNS_LIB, WARNS_LIB_CACHE);
 
       out.println();
 
@@ -435,50 +440,57 @@ public class MethodProcessor extends BuiltinsMetadataProcessor<MethodProcessor.M
     out.println("      var builtins = EnsoContext.get(this).getBuiltins();");
     out.println("      var ensoTypeName = org.enso.interpreter.runtime.type.ConstantsGen.getEnsoTypeName(\"" + builtinName + "\");");
     out.println("      var error = (ensoTypeName != null)");
-    out.println("        ? builtins.error().makeTypeError(builtins.fromTypeSystem(ensoTypeName), arguments[arg"
-                      + arg.getPosition()
-                      + "Idx], \""
-                      + varName
-                      + "\")");
-    out.println("        : builtins.error().makeUnsupportedArgumentsError(new Object[] { arguments[arg"
-                      + arg.getPosition()
-                      + "Idx] }, \"Unsupported argument for "
-                      + varName
-                      + " expected a "
-                      + builtinName
-                      + "\");");
+    out.println(
+        "        ? builtins.error().makeTypeError(builtins.fromTypeSystem(ensoTypeName), arguments[arg"
+            + arg.getPosition()
+            + "Idx], \""
+            + varName
+            + "\")");
+    out.println(
+        "        : builtins.error().makeUnsupportedArgumentsError(new Object[] { arguments[arg"
+            + arg.getPosition()
+            + "Idx] }, \"Unsupported argument for "
+            + varName
+            + " expected a "
+            + builtinName
+            + "\");");
     out.println("      throw new PanicException(error,this);");
     out.println("    }");
   }
 
+  /**
+   * Generates code that checks for warnings of the arguments. If there are any warnings in the
+   * arguments, it stripes them down before passing the argument to the builtin method. The stripped
+   * arguments are gather into {@code gatheredWarnings} variable, that holds all the warnings, which
+   * should be reassigned to the return value from the builtin method.
+   *
+   * @return true iff at least one warning argument check was generated.
+   */
   private boolean generateWarningsCheck(
       PrintWriter out, List<MethodDefinition.ArgumentDefinition> arguments, String argumentsArray) {
     List<MethodDefinition.ArgumentDefinition> argsToCheck =
         arguments.stream()
             .filter(ArgumentDefinition::shouldCheckWarnings)
             .collect(Collectors.toList());
+    // TODO: No warn check for self - arg0Idx?
     if (argsToCheck.isEmpty()) {
       return false;
     } else {
       out.println("    boolean anyWarnings = false;");
       out.println("    ArrayRope<Warning> gatheredWarnings = new ArrayRope<>();");
       for (var arg : argsToCheck) {
-        out.println(
-            "    if ("
-                + arrayRead(argumentsArray, arg.getPosition())
-                + " instanceof WithWarnings) {");
-        out.println("      " + mkArgumentInternalVarName(arg) + WARNING_PROFILE + ".enter();");
+        String argName = arrayRead(argumentsArray, arg.getPosition());
+        out.printf("    if (%s.hasWarnings(%s)) {\n", WARNS_LIB, argName);
+        out.printf("      %s.enter();\n", mkArgumentInternalVarName(arg) + WARNING_PROFILE);
         out.println("      anyWarnings = true;");
+        out.println("      try {");
+        out.printf("        Warning[] warnings = %s.getWarnings(%s, this);\n", WARNS_LIB, argName);
+        out.printf("        %s = %s.removeWarnings(%s);\n", argName, WARNS_LIB, argName);
         out.println(
-            "      WithWarnings withWarnings = (WithWarnings) "
-                + arrayRead(argumentsArray, arg.getPosition())
-                + ";");
-        out.println(
-            "      "
-                + arrayRead(argumentsArray, arg.getPosition())
-                + " = withWarnings.getValue();");
-        out.println(
-            "      gatheredWarnings = gatheredWarnings.prepend(withWarnings.getReassignedWarnings(this));");
+            "        gatheredWarnings = gatheredWarnings.prepend(WithWarnings.reassignWarnings(warnings, this));");
+        out.println("      } catch (UnsupportedMessageException e) {");
+        out.println("        throw new IllegalStateException(\"Should not reach here\", e);");
+        out.println("      }");
         out.println("    }");
       }
       return true;
@@ -563,11 +575,16 @@ public class MethodProcessor extends BuiltinsMetadataProcessor<MethodProcessor.M
   @Override
   protected MethodMetadataEntry toMetadataEntry(String line) {
     String[] elements = line.split(":");
-    if (elements.length != 4) throw new RuntimeException("invalid builtin metadata entry: " + line);
-    return new MethodMetadataEntry(elements[0], elements[1], Boolean.parseBoolean(elements[2]), Boolean.parseBoolean(elements[3]));
+    if (elements.length != 4) {
+      throw new RuntimeException("invalid builtin metadata entry: " + line);
+    }
+    return new MethodMetadataEntry(elements[0], elements[1], Boolean.parseBoolean(elements[2]),
+        Boolean.parseBoolean(elements[3]));
   }
 
   private static final String DATAFLOW_ERROR_PROFILE = "IsDataflowErrorConditionProfile";
   private static final String PANIC_SENTINEL_PROFILE = "PanicSentinelBranchProfile";
   private static final String WARNING_PROFILE = "WarningProfile";
+  private static final String WARNS_LIB = "warningsLibrary";
+  private static final int WARNS_LIB_CACHE = 10;
 }
