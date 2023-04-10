@@ -341,8 +341,8 @@ impl Dom {
         let root = web::document.create_div_or_panic();
         let layers = DomLayers::new(&root);
         root.set_class_name("scene");
-        root.set_style_or_warn("height", "100vh");
-        root.set_style_or_warn("width", "100vw");
+        root.set_style_or_warn("height", "100%");
+        root.set_style_or_warn("width", "100%");
         root.set_style_or_warn("display", "block");
         let root = web::dom::WithKnownShape::new(&root);
         Self { root, layers }

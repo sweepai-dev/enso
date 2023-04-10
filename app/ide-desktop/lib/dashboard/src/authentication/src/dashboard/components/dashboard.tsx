@@ -236,6 +236,13 @@ function Dashboard(props: DashboardProps) {
         }
     }, [searchVal])
 
+    // FIXME[sb]: cursor: none should be on #root, not body
+    react.useEffect(() => {
+        setTimeout(() => { document.body.style.cursor = null; }, 2500)
+    }, [])
+
+    console.log('tab', tab)
+
     /** React components for the name column. */
     const nameRenderers: {
         [Type in backend.AssetType]: (asset: backend.Asset<Type>) => JSX.Element
@@ -288,13 +295,16 @@ function Dashboard(props: DashboardProps) {
             let assets: backend.Asset[]
 
             switch (platform) {
+                // FIXME[sb]: figure out what the desktop IDE is actually supposed to do
+                // should it load projects from cloud and run using local build?
+                default:
                 case platformModule.Platform.cloud: {
                     assets = await backendService.listDirectory({
                         parentId: directoryId,
                     })
                     break
                 }
-                case platformModule.Platform.desktop: {
+                /*case platformModule.Platform.desktop: {
                     const result = await props.projectManager.listProjects({})
                     const localProjects = result.result.projects
                     assets = []
@@ -308,7 +318,7 @@ function Dashboard(props: DashboardProps) {
                         })
                     }
                     break
-                }
+                }*/
             }
             reactDom.unstable_batchedUpdates(() => {
                 setProjectAssets(assets.filter(backend.assetIsType(backend.AssetType.project)))
@@ -488,7 +498,7 @@ function Dashboard(props: DashboardProps) {
                     />
                 </table>
             </div>
-            <div className={tab === Tab.ide ? '' : 'hidden'}>
+            <div className={tab === Tab.ide ? 'relative' : 'hidden'}>
                 {project ? <Ide backendService={backendService} project={project} /> : <></>}
             </div>
             <div id="modal-root" />

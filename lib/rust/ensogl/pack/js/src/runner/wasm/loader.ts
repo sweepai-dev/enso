@@ -40,7 +40,7 @@ export class ProgressIndicator {
 
         this.dom = html_utils.newTopLevelDiv()
         this.dom.id = 'loader'
-        this.dom.style.position = 'fixed'
+        this.dom.style.position = 'absolute'
         this.dom.style.top = '0'
         this.dom.style.left = '0'
         this.dom.style.zIndex = topLayerIndex
