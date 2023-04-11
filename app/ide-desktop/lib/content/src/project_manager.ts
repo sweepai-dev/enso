@@ -21,11 +21,10 @@ export interface Result<T> {
 // FIXME[sb]: This is UNSAFE, as local projects are not accesible by the cloud,
 // however it is required for now otherwise the dashboard cannot store local project metadata.
 export type ProjectId = newtype.Newtype<string, 'ProjectId'>
-export type ProjectName = newtype.Newtype<string, 'ProjectName'>
 export type UTCDateTime = newtype.Newtype<string, 'UTCDateTime'>
 
 export interface ProjectMetadata {
-    name: ProjectName
+    name: string
     namespace: string
     id: ProjectId
     engineVersion: string | null
@@ -49,7 +48,7 @@ export interface OpenProject {
     engineVersion: string
     languageServerJsonAddress: IpWithSocket
     languageServerBinaryAddress: IpWithSocket
-    projectName: ProjectName
+    projectName: string
     projectNamespace: string
 }
 
@@ -102,7 +101,12 @@ export class ProjectManager {
         return new ProjectManager(PROJECT_MANAGER_ENDPOINT)
     }
 
-    public async sendRequest<T = void>(method: string, params: unknown): Promise<Result<T>> {
+    public async sendRequest<T = void>(
+        method: string,
+        params: unknown
+        // This is fully safe as `void` is intentionally special-cased.
+        // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+    ): Promise<T extends void ? void : Result<T>> {
         const req = {
             jsonrpc: '2.0',
             id: 0,
@@ -111,7 +115,9 @@ export class ProjectManager {
         }
 
         const ws = new WebSocket(this.connectionUrl)
-        return new Promise<Result<T>>((resolve, reject) => {
+        // This is fully safe as `void` is intentionally special-cased.
+        // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+        return new Promise<T extends void ? void : Result<T>>((resolve, reject) => {
             ws.onopen = () => {
                 ws.send(JSON.stringify(req))
             }
@@ -134,7 +140,7 @@ export class ProjectManager {
     }
 
     /** Close an open project. */
-    public async closeProject(params: CloseProjectParams): Promise<Result<void>> {
+    public async closeProject(params: CloseProjectParams): Promise<void> {
         return this.sendRequest('project/close', params)
     }
 
@@ -152,12 +158,12 @@ export class ProjectManager {
     }
 
     /** Rename a project. */
-    public async renameProject(params: RenameProjectParams): Promise<Result<void>> {
+    public async renameProject(params: RenameProjectParams): Promise<void> {
         return this.sendRequest('project/rename', params)
     }
 
     /** Delete a project. */
-    public async deleteProject(params: DeleteProjectParams): Promise<Result<void>> {
+    public async deleteProject(params: DeleteProjectParams): Promise<void> {
         return this.sendRequest('project/delete', params)
     }
 
