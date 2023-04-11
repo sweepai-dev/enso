@@ -2,13 +2,13 @@
 import * as esbuild from 'esbuild'
 import * as portfinder from 'portfinder'
 
-import * as bundler from './esbuild-config.js'
+import * as bundler from './esbuild-config'
 
 const PORT = 8080
 const HTTP_STATUS_OK = 200
 
 async function watch() {
-    const opts = bundler.bundleOptions()
+    const opts = bundler.bundleOptions({ platform: 'desktop' })
     const builder = await esbuild.context(opts)
     await builder.watch()
     await builder.serve({

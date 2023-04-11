@@ -16,7 +16,7 @@ const HTTP_STATUS_OK = 200
 // === Watcher ===
 // ===============
 
-async function watch() {
+export async function watch(args: bundler.ExternalArguments) {
     const dashboardOpts = dashboardBundler.bundleOptions()
     const dashboardBuilder = await esbuild.context(dashboardOpts)
     // We do not need to serve the dashboard as it outputs to the same directory.
@@ -24,7 +24,7 @@ async function watch() {
     // This MUST be called before `builder.watch()` as `tailwind.css` must be generated
     // before the copy plugin runs.
     await dashboardBuilder.watch()
-    const opts = bundler.bundleOptions()
+    const opts = bundler.bundleOptions(args)
     const builder = await esbuild.context(opts)
     await builder.watch()
     await builder.serve({
@@ -37,5 +37,3 @@ async function watch() {
         },
     })
 }
-
-void watch()

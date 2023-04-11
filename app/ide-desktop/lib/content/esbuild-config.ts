@@ -9,6 +9,7 @@
  * https://esbuild.github.io/getting-started/#bundling-for-node.
  */
 
+// FIXME[sb]: Cloud should add service_worker.ts as an entrypoint.
 import * as childProcess from 'node:child_process'
 import * as fs from 'node:fs/promises'
 import * as path from 'node:path'
@@ -31,7 +32,13 @@ export const THIS_PATH = path.resolve(path.dirname(url.fileURLToPath(import.meta
 // === Environment variables ===
 // =============================
 
-export interface Arguments {
+export interface ExternalArguments {
+    /** `'desktop'` if the desktop IDE is being built;
+     * `'cloud'` if the cloud dashboard is being built. */
+    platform: 'cloud' | 'desktop'
+}
+
+export interface Arguments extends ExternalArguments {
     /** List of files to be copied from WASM artifacts. */
     wasmArtifacts: string
     /** Directory with assets. Its contents are to be copied. */
@@ -45,12 +52,12 @@ export interface Arguments {
 /**
  * Get arguments from the environment.
  */
-export function argumentsFromEnv(): Arguments {
+export function argumentsFromEnv(args: ExternalArguments): Arguments {
     const wasmArtifacts = utils.requireEnv('ENSO_BUILD_GUI_WASM_ARTIFACTS')
     const assetsPath = utils.requireEnv('ENSO_BUILD_GUI_ASSETS')
     const outputPath = path.resolve(utils.requireEnv('ENSO_BUILD_GUI'), 'assets')
     const ensoglAppPath = utils.requireEnv('ENSO_BUILD_GUI_ENSOGL_APP')
-    return { wasmArtifacts, assetsPath, outputPath, ensoglAppPath }
+    return { wasmArtifacts, assetsPath, outputPath, ensoglAppPath, ...args }
 }
 
 // ===================
@@ -106,7 +113,7 @@ export async function* filesToCopyProvider(wasmArtifacts: string, assetsPath: st
  * Generate the builder options.
  */
 export function bundlerOptions(args: Arguments) {
-    const { outputPath, ensoglAppPath, wasmArtifacts, assetsPath } = args
+    const { outputPath, ensoglAppPath, wasmArtifacts, assetsPath, platform } = args
     const buildOptions = {
         // Disabling naming convention because these are third-party options.
         /* eslint-disable @typescript-eslint/naming-convention */
@@ -127,6 +134,7 @@ export function bundlerOptions(args: Arguments) {
             GIT_HASH: JSON.stringify(git('rev-parse HEAD')),
             GIT_STATUS: JSON.stringify(git('status --short --porcelain')),
             BUILD_INFO: JSON.stringify(BUILD_INFO),
+            PLATFORM: JSON.stringify(platform),
         },
         sourcemap: true,
         minify: true,
@@ -154,14 +162,14 @@ export function bundlerOptions(args: Arguments) {
  *
  * Note that they should be further customized as per the needs of the specific workflow (e.g. watch vs. build).
  */
-export function bundlerOptionsFromEnv() {
-    return bundlerOptions(argumentsFromEnv())
+export function bundlerOptionsFromEnv(args: ExternalArguments) {
+    return bundlerOptions(argumentsFromEnv(args))
 }
 
 /** ESBuild options for bundling (one-off build) the package.
  *
  * Relies on the environment variables to be set.
  */
-export function bundleOptions() {
-    return bundlerOptionsFromEnv()
+export function bundleOptions(args: ExternalArguments) {
+    return bundlerOptionsFromEnv(args)
 }

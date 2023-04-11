@@ -101,12 +101,10 @@ function ProjectActionButton(props: ProjectActionButtonProps) {
         setState(backend.ProjectState.closed)
         void backendService.closeProject(project.id)
 
-        reactDom.unstable_batchedUpdates(() => {
-            setCheckStatusInterval(null)
-            if (checkStatusInterval != null) {
-                clearInterval(checkStatusInterval)
-            }
-        })
+        if (checkStatusInterval != null) {
+            clearInterval(checkStatusInterval)
+        }
+        setCheckStatusInterval(null)
     }
 
     function openProject() {
@@ -127,19 +125,17 @@ function ProjectActionButton(props: ProjectActionButtonProps) {
             setState(response.state.type)
 
             if (response.state.type === backend.ProjectState.opened) {
-                setCheckStatusInterval(null)
                 if (checkStatusInterval != null) {
                     clearInterval(checkStatusInterval)
                 }
+                setCheckStatusInterval(null)
                 setSpinnerState(SpinnerState.done)
             }
         }
 
-        reactDom.unstable_batchedUpdates(() => {
-            setCheckStatusInterval(
-                window.setInterval(() => void checkProjectStatus(), STATUS_CHECK_INTERVAL)
-            )
-        })
+        setCheckStatusInterval(
+            window.setInterval(() => void checkProjectStatus(), STATUS_CHECK_INTERVAL)
+        )
     }
 
     switch (state) {

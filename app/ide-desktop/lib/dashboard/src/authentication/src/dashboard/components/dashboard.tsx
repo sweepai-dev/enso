@@ -236,13 +236,6 @@ function Dashboard(props: DashboardProps) {
         }
     }, [searchVal])
 
-    // FIXME[sb]: cursor: none should be on #root, not body
-    react.useEffect(() => {
-        setTimeout(() => { document.body.style.cursor = null; }, 2500)
-    }, [])
-
-    console.log('tab', tab)
-
     /** React components for the name column. */
     const nameRenderers: {
         [Type in backend.AssetType]: (asset: backend.Asset<Type>) => JSX.Element
@@ -499,7 +492,7 @@ function Dashboard(props: DashboardProps) {
                 </table>
             </div>
             <div className={tab === Tab.ide ? 'relative' : 'hidden'}>
-                {project ? <Ide backendService={backendService} project={project} /> : <></>}
+                <Ide backendService={backendService} project={project} />
             </div>
             <div id="modal-root" />
         </div>

@@ -13,16 +13,18 @@ export enum MissingComponentAction {
     forceInstallBroken = 'ForceInstallBroken',
 }
 
-interface Result<T> {
+export interface Result<T> {
     result: T
 }
 
 // This intentionally has the same brand as in the cloud backend API.
+// FIXME[sb]: This is UNSAFE, as local projects are not accesible by the cloud,
+// however it is required for now otherwise the dashboard cannot store local project metadata.
 export type ProjectId = newtype.Newtype<string, 'ProjectId'>
 export type ProjectName = newtype.Newtype<string, 'ProjectName'>
 export type UTCDateTime = newtype.Newtype<string, 'UTCDateTime'>
 
-interface ProjectMetadata {
+export interface ProjectMetadata {
     name: ProjectName
     namespace: string
     id: ProjectId
@@ -30,20 +32,20 @@ interface ProjectMetadata {
     lastOpened: UTCDateTime | null
 }
 
-interface IpWithSocket {
+export interface IpWithSocket {
     host: string
     port: number
 }
 
-interface ProjectList {
+export interface ProjectList {
     projects: ProjectMetadata[]
 }
 
-interface CreateProject {
+export interface CreateProject {
     projectId: ProjectId
 }
 
-interface OpenProject {
+export interface OpenProject {
     engineVersion: string
     languageServerJsonAddress: IpWithSocket
     languageServerBinaryAddress: IpWithSocket
@@ -126,22 +128,22 @@ export class ProjectManager {
         })
     }
 
-    /** * Open an existing project. */
+    /** Open an existing project. */
     public async openProject(params: OpenProjectParams): Promise<Result<OpenProject>> {
         return this.sendRequest<OpenProject>('project/open', params)
     }
 
-    /** * Close an open project. */
+    /** Close an open project. */
     public async closeProject(params: CloseProjectParams): Promise<Result<void>> {
         return this.sendRequest('project/close', params)
     }
 
-    /** * Get the projects list, sorted by open time. */
+    /** Get the projects list, sorted by open time. */
     public async listProjects(params: ListProjectsParams): Promise<Result<ProjectList>> {
         return this.sendRequest<ProjectList>('project/list', params)
     }
 
-    /** * Create a new project. */
+    /** Create a new project. */
     public async createProject(params: CreateProjectParams): Promise<Result<CreateProject>> {
         return this.sendRequest<CreateProject>('project/create', {
             missingComponentAction: MissingComponentAction.install,
@@ -149,17 +151,17 @@ export class ProjectManager {
         })
     }
 
-    /** * Rename a project. */
+    /** Rename a project. */
     public async renameProject(params: RenameProjectParams): Promise<Result<void>> {
         return this.sendRequest('project/rename', params)
     }
 
-    /** * Delete a project. */
+    /** Delete a project. */
     public async deleteProject(params: DeleteProjectParams): Promise<Result<void>> {
         return this.sendRequest('project/delete', params)
     }
 
-    /** * Get the list of sample projects that are available to the user. */
+    /** Get the list of sample projects that are available to the user. */
     public async listSamples(params: ListSamplesParams): Promise<Result<ProjectList>> {
         return this.sendRequest<ProjectList>('project/listSample', params)
     }

@@ -18,7 +18,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx --yes eslint src",
     "build": "tsx bundle.ts",
-    "watch": "tsx watch.ts",
+    "watch-desktop": "tsx watch-desktop.ts",
+    "watch-cloud": "tsx watch-cloud.ts",
     "start": "tsx start.ts"
   },
   "dependencies": {

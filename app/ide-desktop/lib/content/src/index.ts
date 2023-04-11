@@ -8,15 +8,42 @@ import * as authentication from 'enso-authentication'
 import * as contentConfig from 'enso-content-config'
 
 import * as app from '../../../../../target/ensogl-pack/linked-dist/index'
+// FIXME[sb]: Implement logic in `project_manager` for cloud stuff
 import * as projectManager from './project_manager'
 import GLOBAL_CONFIG from '../../../../gui/config.yaml' assert { type: 'yaml' }
 
 const logger = app.log.logger
 
+// =================
 // === Constants ===
+// =================
+
 /** One second in milliseconds. */
 const SECOND = 1000
 const FETCH_TIMEOUT = 300
+const OPTIONS = contentConfig.OPTIONS.options
+const STARTUP_OPTIONS = contentConfig.OPTIONS.groups.startup.options
+const AUTHENTICATION_OPTIONS = contentConfig.OPTIONS.groups.authentication.options
+// FIXME[sb]: The version is currently hardcoded; the endpoint to list versions may be locked behind authentication.
+const ASSETS_BASE =
+    PLATFORM === 'desktop'
+        ? ''
+        : 'https://ensocdn.s3.us-west-1.amazonaws.com/ide/2023.1.1-nightly.2023.4.7/'
+const ESBUILD_SSE_ENDPOINT = '/esbuild'
+const ESBUILD_SSE_EVENT = 'change'
+
+// ===================
+// === Live reload ===
+// ===================
+
+if (IS_DEV_MODE) {
+    new EventSource(ESBUILD_SSE_ENDPOINT).addEventListener(ESBUILD_SSE_EVENT, () => {
+        location.reload()
+    })
+    if (PLATFORM === 'cloud') {
+        void navigator.serviceWorker.register('/service_worker.js')
+    }
+}
 
 // =============
 // === Fetch ===
@@ -113,9 +140,9 @@ class Main {
         const config = Object.assign(
             {
                 loader: {
-                    wasmUrl: 'pkg-opt.wasm',
-                    jsUrl: 'pkg.js',
-                    assetsUrl: 'dynamic-assets',
+                    wasmUrl: `${ASSETS_BASE}pkg-opt.wasm`,
+                    jsUrl: `${ASSETS_BASE}pkg.js`,
+                    assetsUrl: `${ASSETS_BASE}dynamic-assets`,
                 },
             },
             inputConfig
@@ -131,31 +158,17 @@ class Main {
         })
 
         if (appInstance.initialized) {
-            if (contentConfig.OPTIONS.options.dataCollection.value) {
+            if (OPTIONS.dataCollection.value) {
                 // TODO: Add remote-logging here.
             }
             if (!(await checkMinSupportedVersion(contentConfig.OPTIONS))) {
                 displayDeprecatedVersionDialog()
             } else {
                 if (
-                    contentConfig.OPTIONS.options.authentication.value &&
-                    contentConfig.OPTIONS.groups.startup.options.entry.value ===
-                        contentConfig.OPTIONS.groups.startup.options.entry.default
+                    PLATFORM === 'cloud' ||
+                    (OPTIONS.authentication.value &&
+                        STARTUP_OPTIONS.entry.value === STARTUP_OPTIONS.entry.default)
                 ) {
-                    const hideAuth = () => {
-                        const auth = document.getElementById('dashboard')
-                        const ide = document.getElementById('root')
-                        if (auth) auth.style.display = 'none'
-                        if (ide) ide.style.display = ''
-                    }
-                    /** This package is an Electron desktop app (i.e., not in the Cloud), so
-                     * we're running on the desktop. */
-                    /** TODO [NP]: https://github.com/enso-org/cloud-v2/issues/345
-                     * `content` and `dashboard` packages **MUST BE MERGED INTO ONE**. The IDE
-                     * should only have one entry point. Right now, we have two. One for the cloud
-                     * and one for the desktop. Once these are merged, we can't hardcode the
-                     * platform here, and need to detect it from the environment. */
-                    const platform = authentication.Platform.desktop
                     /** FIXME [PB]: https://github.com/enso-org/cloud-v2/issues/366
                      * React hooks rerender themselves multiple times. It is resulting in multiple
                      * Enso main scene being initialized. As a temporary workaround we check whether
@@ -163,22 +176,29 @@ class Main {
                      * where it will be called only once. */
                     let appInstanceRan = false
                     const onAuthenticated = () => {
-                        hideAuth()
                         if (!appInstanceRan) {
                             appInstanceRan = true
                             void appInstance.run()
                         }
                     }
-                    authentication.run({
-                        logger,
-                        platform,
-                        projectManager: projectManager.ProjectManager.default(),
-                        onAuthenticated,
-                    })
+                    if (PLATFORM === 'cloud') {
+                        authentication.run({
+                            logger,
+                            platform: authentication.Platform.cloud,
+                            onAuthenticated,
+                        })
+                    } else {
+                        authentication.run({
+                            logger,
+                            platform: authentication.Platform.desktop,
+                            projectManager: projectManager.ProjectManager.default(),
+                            onAuthenticated,
+                        })
+                    }
                 } else {
                     void appInstance.run()
                 }
-                const email = contentConfig.OPTIONS.groups.authentication.options.email.value
+                const email = AUTHENTICATION_OPTIONS.email.value
                 // The default value is `""`, so a truthiness check is most appropriate here.
                 if (email) {
                     logger.log(`User identified as '${email}'.`)

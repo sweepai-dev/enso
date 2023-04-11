@@ -33,9 +33,9 @@
     "eslint-plugin-jsdoc": "^40.0.2"
   },
   "scripts": {
-    "watch": "npm run watch --workspace enso-content",
-    "watch-dashboard": "npm run watch --workspace enso-dashboard",
-    "build-dashboard": "npm run build --workspace enso-dashboard",
+    "watch": "npm run watch-desktop --workspace enso-content",
+    "watch-cloud": "npm run watch-cloud --workspace enso-content",
+    "build-cloud": "npm run build-cloud --workspace enso-content",
     "typecheck": "npm run typecheck --workspace enso; npm run typecheck --workspace enso-content; npm run typecheck --workspace enso-dashboard; npm run typecheck --workspace enso-authentication"
   }
 }
