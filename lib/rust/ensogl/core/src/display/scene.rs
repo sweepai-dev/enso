@@ -150,7 +150,7 @@ pub struct Mouse {
 impl Mouse {
     pub fn new(
         scene_frp: &Frp,
-        root: &web::dom::WithKnownShape<web::HtmlDivElement>,
+        dom: &Dom,
         variables: &UniformScope,
         display_mode: &Rc<Cell<glsl::codes::DisplayModes>>,
         pointer_target_registry: &PointerTargetRegistry,
@@ -164,8 +164,9 @@ impl Mouse {
         let click_count = variables.add_or_panic("mouse_click_count", 0);
         let pointer_target_encoded = variables.add_or_panic("mouse_hover_ids", Vector4::default());
         let target = Rc::new(Cell::new(target));
-        let shaped_dom = root.clone_ref().into();
-        let mouse_manager = MouseManager::new(&shaped_dom, root, &web::window);
+        let shaped_dom = dom.root.clone_ref().into();
+        let mouse_manager = MouseManager::new(&shaped_dom, &dom.layers.canvas, &web::window);
+
         let frp_deprecated = frp::io::Mouse_DEPRECATED::new();
         let last_move_event = Rc::new(RefCell::new(None));
         let on_move = mouse_manager.on_move.add(
@@ -838,8 +839,7 @@ impl SceneData {
         let renderer = Renderer::new(&dom, &variables);
         let style_sheet = world::with_context(|t| t.style_sheet.clone_ref());
         let frp = Frp::new(&dom.root.shape);
-        let mouse =
-            Mouse::new(&frp, &dom.root, &variables, &display_mode, &pointer_target_registry);
+        let mouse = Mouse::new(&frp, &dom, &variables, &display_mode, &pointer_target_registry);
         let disable_context_menu = Rc::new(web::ignore_context_menu(&dom.root));
         let keyboard = Keyboard::new();
         let network = &frp.network;
