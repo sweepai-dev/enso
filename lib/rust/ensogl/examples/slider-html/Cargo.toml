@@ -14,6 +14,7 @@ ensogl-hardcoded-theme = { path = "../../app/theme/hardcoded" }
 ensogl-text-msdf = { path = "../../component/text/src/font/msdf" }
 ensogl-slider = { path = "../../component/slider" }
 wasm-bindgen = { workspace = true }
+js-sys = { workspace = true }
 
 # Stop wasm-pack from running wasm-opt, because we run it from our build scripts in order to customize options.
 [package.metadata.wasm-pack.profile.release]

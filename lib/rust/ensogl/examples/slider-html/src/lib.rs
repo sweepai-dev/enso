@@ -348,36 +348,17 @@ pub trait HasJsRepr {
 pub type JsRepr<T> = <T as HasJsRepr>::JsRepr;
 
 
-pub trait UncheckedFrom<T>: Sized {
-    fn unchecked_from(value: T) -> Self;
-}
 
-pub struct WrongCast {}
-
-
-
-macro_rules! def_wrapper {
-    ($name:ident <- $base:ident) => {
-        #[derive(AsRef, Debug, Clone, Deref, Into)]
-        struct Object {
-            js_value: web::JsValue,
-        }
-    };
-}
+type JsValue = web::JsValue;
 
 
 // ==============
 // === Object ===
 // ==============
 
-def_wrapper! {
-    Object <- JsValue
-}
-
-#[repr(transparent)]
 #[derive(AsRef, Debug, Clone, Deref, Into)]
 struct Object {
-    js_value: web::JsValue,
+    repr: JsValue,
 }
 
 impl HasJsRepr for Object {
@@ -392,23 +373,38 @@ impl AsRef<web::Object> for Object {
 
 impl From<web::Object> for Object {
     fn from(t: web::Object) -> Self {
-        Self { js_value: t.unchecked_into() }
+        Self { repr: JsValue::from(web::JsValue::from(t)) }
     }
 }
 
-impl UncheckedFrom<web::JsValue> for Object {
-    fn unchecked_from(js_value: web::JsValue) -> Self {
-        Self { js_value }
+impl From<Object> for web::Object {
+    fn from(t: Object) -> Self {
+        t.repr.unchecked_into()
     }
 }
 
-impl TryFrom<web::JsValue> for Object {
-    type Error = WrongCast;
-    fn try_from(t: web::JsValue) -> Result<Self, Self::Error> {
-        t.dyn_into::<web::Object>().map(|t| t.into()).map_err(|_| WrongCast {})
+#[cfg(not(target_arch = "wasm32"))]
+impl mock::MockData for Object {}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl mock::MockDefault for Object {
+    fn mock_default() -> Self {
+        Self { repr: mock::MockDefault::mock_default() }
     }
 }
 
+#[cfg(target_arch = "wasm32")]
+impl JsCast for Object {
+    fn instanceof(val: &JsValue) -> bool {
+        web::Object::instanceof(val)
+    }
+    fn unchecked_from_js(val: JsValue) -> Self {
+        Self { repr: JsCast::unchecked_from_js(val) }
+    }
+    fn unchecked_from_js_ref(val: &JsValue) -> &Self {
+        unsafe { &*(val as *const JsValue as *const Self) }
+    }
+}
 
 // ===================
 // === EventTarget ===
@@ -428,33 +424,24 @@ fn next_node_id() -> EventTargetId {
 
 type EventTargetId = usize;
 
-impl Eq for EventTarget {}
-impl PartialEq for EventTarget {
-    fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
-    }
-}
+// impl Eq for EventTarget {}
+// impl PartialEq for EventTarget {
+//     fn eq(&self, other: &Self) -> bool {
+//         self.id == other.id
+//     }
+// }
+//
+// impl Hash for EventTarget {
+//     fn hash<H: Hasher>(&self, state: &mut H) {
+//         self.id.hash(state)
+//     }
+// }
 
-impl Hash for EventTarget {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.id.hash(state)
-    }
-}
-
-// FIXME
-impl From<Object> for EventTarget {
-    fn from(object: Object) -> Self {
-        let id = next_node_id();
-        Self { object, id }
-    }
-}
 
 
 #[derive(Debug, Clone, Deref)]
 struct EventTarget {
-    #[deref]
     object: Object,
-    id:     EventTargetId,
 }
 
 impl HasJsRepr for EventTarget {
@@ -467,17 +454,24 @@ impl AsRef<web::EventTarget> for EventTarget {
     }
 }
 
-// impl From<web::JsValue> for EventTarget {
-//     fn from(js_value: web::JsValue) -> Self {
-//         let t: Object = js_value.into();
-//         Self::from(t)
-//     }
-// }
+// FIXME
+impl From<web::EventTarget> for EventTarget {
+    fn from(t: web::EventTarget) -> Self {
+        let foo: web::Object = t.into();
+        let object = Object::from(foo);
+        Self { object }
+    }
+}
+
 
 impl EventTarget {
     pub fn on_event<E: frp::Data>(&self) -> frp::Sampler<E>
     where E: From<(web::JsValue, Shape)> {
         add_listener_for(self)
+    }
+
+    pub fn id(&self) -> EventTargetId {
+        0
     }
 }
 
@@ -486,27 +480,25 @@ impl EventTarget {
 // === Node ====
 // =============
 
-#[derive(Debug, Clone, Deref, From)]
-struct Node {
-    event_target: EventTarget,
-}
 
+#[derive(AsRef, Debug, Clone, Deref, Into)]
+struct Node {
+    repr: EventTarget,
+}
 impl HasJsRepr for Node {
     type JsRepr = web::Node;
 }
-
 impl AsRef<web::Node> for Node {
     fn as_ref(&self) -> &web::Node {
         self.unchecked_ref()
     }
 }
+impl From<web::Node> for Node {
+    fn from(t: web::Node) -> Self {
+        Self { repr: EventTarget::from(web::EventTarget::from(t)) }
+    }
+}
 
-// impl From<web::JsValue> for Node {
-//     fn from(js_value: web::JsValue) -> Self {
-//         let t: EventTarget = js_value.into();
-//         Self::from(t)
-//     }
-// }
 
 // ===============
 // === Element ===
@@ -680,7 +672,7 @@ where E: frp::Data + From<(web::JsValue, Shape)> {
     let listener = Listener { network, callback, event: Box::new(event.clone()) };
     LISTENERS.with(|listeners| {
         let mut listeners = listeners.borrow_mut();
-        let listeners = listeners.entry(target.id).or_default();
+        let listeners = listeners.entry(target.id()).or_default();
         listeners.insert(TypeId::of::<E>(), listener);
     });
     event
