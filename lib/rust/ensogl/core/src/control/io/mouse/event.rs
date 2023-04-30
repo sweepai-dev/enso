@@ -6,6 +6,7 @@ use web::traits::*;
 use crate::system::web;
 
 use enso_frp::io::mouse;
+use enso_web::JsValue;
 use web::dom::Shape;
 
 
@@ -337,5 +338,12 @@ impl Wheel {
     /// The vertical scroll amount.
     pub fn delta_y(&self) -> f64 {
         self.js_event.as_ref().map(|t| t.delta_y()).unwrap_or_default()
+    }
+}
+
+impl From<(JsValue, Shape)> for Down {
+    fn from((js_val, shape): (JsValue, Shape)) -> Self {
+        let js_event = js_val.unchecked_into::<web::MouseEvent>();
+        Self::new(js_event, shape)
     }
 }

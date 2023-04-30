@@ -330,15 +330,20 @@ impl Default for Keyboard {
 /// removes them once dropped.
 #[derive(Clone, Debug)]
 pub struct Dom {
+    pub html_root: web::dom::WithKnownShape<web::HtmlDivElement>,
     /// Root DOM element of the scene.
-    pub root:   web::dom::WithKnownShape<web::HtmlDivElement>,
+    pub root:      web::dom::WithKnownShape<web::HtmlDivElement>,
     /// DomLayers of the scene.
-    pub layers: DomLayers,
+    pub layers:    DomLayers,
 }
 
 impl Dom {
     /// Constructor.
     pub fn new() -> Self {
+        let html_root = web::document
+            .get_html_element_by_id("html-root")
+            .unwrap()
+            .unchecked_into::<web::HtmlDivElement>();
         let root = web::document.create_div_or_panic();
         let layers = DomLayers::new(&root);
         root.set_class_name("scene");
@@ -346,7 +351,8 @@ impl Dom {
         root.set_style_or_warn("width", "100vw");
         root.set_style_or_warn("display", "block");
         let root = web::dom::WithKnownShape::new(&root);
-        Self { root, layers }
+        let html_root = web::dom::WithKnownShape::new(&html_root);
+        Self { html_root, root, layers }
     }
 
     pub fn shape(&self) -> Shape {

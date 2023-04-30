@@ -27,6 +27,7 @@ ensogl-example-profiling-run-graph = { path = "profiling-run-graph" }
 ensogl-example-render-profile-flamegraph = { path = "render-profile-flamegraph" }
 ensogl-example-scroll-area = { path = "scroll-area" }
 ensogl-example-slider = { path = "slider" }
+ensogl-example-slider-html = { path = "slider-html" }
 ensogl-example-sprite-system = { path = "sprite-system" }
 ensogl-example-sprite-system-benchmark = { path = "sprite-system-benchmark" }
 ensogl-example-text-area = { path = "text-area" }
