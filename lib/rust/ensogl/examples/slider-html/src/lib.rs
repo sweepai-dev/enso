@@ -316,7 +316,17 @@ ensogl_core::define_endpoints! {
 }
 
 
-struct Object {}
+trait JsBaseObject {
+    fn default() -> Self;
+}
+
+impl JsBaseObject for web::HtmlDivElement {
+    fn default() -> Self {
+        web::document.create_div_or_panic()
+    }
+}
+
+// struct Object {}
 // struct EventTarget {}
 // struct Node {}
 // struct Element {}
@@ -324,107 +334,254 @@ struct Object {}
 // struct HtmlDivElement {}
 
 
-#[derive(Debug, Deref, Default, Clone)]
-struct HtmlElement {
-    element: Element,
+
+// ======================
+// === HtmlDivElement ===
+// ======================
+
+type HtmlDivElement = HtmlDivElementTemplate<web::HtmlDivElement>;
+
+#[repr(transparent)]
+#[derive(Debug, Clone)]
+struct HtmlDivElementTemplate<T> {
+    html_element: HtmlElementTemplate<T>,
 }
 
-impl HtmlElement {
+impl<T: JsBaseObject> Default for HtmlDivElementTemplate<T> {
+    fn default() -> Self {
+        Self { html_element: default() }
+    }
+}
+
+impl<T: JsBaseObject> HtmlDivElementTemplate<T> {
+    pub fn new() -> Self {
+        default()
+    }
+
+    pub fn js_repr(&self) -> &T {
+        &self.html_element.element.node.event_target.object.js_value
+    }
+}
+
+impl<T> From<T> for HtmlDivElementTemplate<T> {
+    fn from(t: T) -> Self {
+        let html_element = HtmlElementTemplate::from(t);
+        Self { html_element }
+    }
+}
+
+
+impl Deref for HtmlDivElement {
+    type Target = HtmlElement;
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*(self as *const HtmlDivElement as *const () as *const HtmlElement) }
+    }
+}
+
+
+// ===================
+// === HtmlElement ===
+// ===================
+
+type HtmlElement = HtmlElementTemplate<web::HtmlElement>;
+
+#[repr(transparent)]
+#[derive(Debug, Clone)]
+struct HtmlElementTemplate<T> {
+    element: ElementTemplate<T>,
+}
+
+impl<T: JsBaseObject> Default for HtmlElementTemplate<T> {
+    fn default() -> Self {
+        Self { element: default() }
+    }
+}
+
+impl<T: JsBaseObject> HtmlElementTemplate<T> {
     pub fn new() -> Self {
         default()
     }
 }
 
-#[derive(Debug, Deref, Default, Clone)]
-struct Element {
-    node: Node,
+impl<T> From<T> for HtmlElementTemplate<T> {
+    fn from(t: T) -> Self {
+        let element = ElementTemplate::from(t);
+        Self { element }
+    }
 }
 
-impl Element {
+impl Deref for HtmlElement {
+    type Target = Element;
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*(self as *const HtmlElement as *const () as *const Element) }
+    }
+}
+
+
+// ===============
+// === Element ===
+// ===============
+
+type Element = ElementTemplate<web::Element>;
+
+#[repr(transparent)]
+#[derive(Debug, Clone)]
+struct ElementTemplate<T> {
+    node: NodeTemplate<T>,
+}
+
+impl<T: JsBaseObject> Default for ElementTemplate<T> {
+    fn default() -> Self {
+        Self { node: default() }
+    }
+}
+
+impl<T: JsBaseObject> ElementTemplate<T> {
     pub fn new() -> Self {
         default()
     }
 }
 
-#[derive(Debug, Deref, Default, Clone)]
-struct Node {
-    event_target: EventTarget,
+impl<T> From<T> for ElementTemplate<T> {
+    fn from(t: T) -> Self {
+        let node = NodeTemplate::from(t);
+        Self { node }
+    }
 }
 
-impl Node {
+impl Deref for Element {
+    type Target = Node;
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*(self as *const Element as *const () as *const Node) }
+    }
+}
+
+
+
+// =============
+// === Node ====
+// =============
+
+type Node = NodeTemplate<web::Node>;
+
+#[repr(transparent)]
+#[derive(Debug, Clone)]
+struct NodeTemplate<T> {
+    event_target: EventTargetTemplate<T>,
+}
+
+impl<T: JsBaseObject> Default for NodeTemplate<T> {
+    fn default() -> Self {
+        Self { event_target: default() }
+    }
+}
+
+impl<T: JsBaseObject> NodeTemplate<T> {
     pub fn new() -> Self {
         default()
     }
 }
 
-#[derive(Debug, Deref, Clone)]
-struct EventTargetTemplate<T> {
-    frp:             Frp,
-    #[deref]
-    dom:             T,
-    event_listeners: Rc<RefCell<HashMap<std::any::TypeId, Box<dyn Any>>>>,
+impl<T> NodeTemplate<T> {
+    pub fn js_repr(&self) -> &T {
+        &self.event_target.object.js_value
+    }
 }
+
+impl<T> From<T> for NodeTemplate<T> {
+    fn from(t: T) -> Self {
+        let event_target = EventTargetTemplate::from(t);
+        Self { event_target }
+    }
+}
+
+impl Deref for Node {
+    type Target = EventTarget;
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*(self as *const Node as *const () as *const EventTarget) }
+    }
+}
+
+
+
+// ===================
+// === EventTarget ===
+// ===================
 
 type EventTarget = EventTargetTemplate<web::HtmlDivElement>;
 
-impl Default for EventTarget {
+#[derive(Debug, Clone)]
+struct EventTargetTemplate<T> {
+    frp:             Frp,
+    object:          ObjectTemplate<T>,
+    event_listeners: Rc<RefCell<HashMap<std::any::TypeId, Box<dyn Any>>>>,
+}
+
+impl Deref for EventTarget {
+    type Target = Object;
+    fn deref(&self) -> &Self::Target {
+        unsafe {
+            &*(&self.object as *const ObjectTemplate<web::HtmlDivElement> as *const ()
+                as *const Object)
+        }
+    }
+}
+
+impl<T: JsBaseObject> Default for EventTargetTemplate<T> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl From<web::HtmlDivElement> for EventTarget {
-    fn from(dom: web::HtmlDivElement) -> Self {
+impl<T> From<T> for EventTargetTemplate<T> {
+    fn from(t: T) -> Self {
         let frp = Frp::new();
         let event_listeners = default();
-        Self { frp, dom, event_listeners }.init()
+        let object = ObjectTemplate::from(t);
+        Self { frp, object, event_listeners } //.init()
     }
 }
 
-// impl From<web::EventTarget> for EventTarget {
-//     fn from(dom: web::EventTarget) -> Self {
-//         let frp = Frp::new();
-//         let event_listeners = default();
-//         Self { frp, dom, event_listeners }.init()
-//     }
-// }
-
-impl EventTarget {
+impl<T: JsBaseObject> EventTargetTemplate<T> {
     pub fn new() -> Self {
-        Self::from(web::document.create_div_or_panic())
+        let object: T = JsBaseObject::default();
+        Self::from(object)
+        // Self::from(web::document.create_div_or_panic())
     }
+}
 
+impl HtmlDivElement {
     fn init(self) -> Self {
         self.set_display("flex");
         self
     }
 
-    pub fn append_child(&self, child: &web::Node) {
-        self.dom.append_child(child).unwrap();
+    pub fn append_child(&self, child: &Node) {
+        self.js_repr().append_child(child.js_repr()).unwrap();
     }
 
     pub fn set_width(&self, width: f64) -> &Self {
-        self.dom.set_style_or_warn("width", &format!("{}px", width));
+        self.js_repr().set_style_or_warn("width", &format!("{}px", width));
         self
     }
 
     pub fn set_height(&self, width: f64) -> &Self {
-        self.dom.set_style_or_warn("height", &format!("{}px", width));
+        self.js_repr().set_style_or_warn("height", &format!("{}px", width));
         self
     }
 
     pub fn set_background(&self, background: &str) -> &Self {
-        self.dom.set_style_or_warn("background", background);
+        self.js_repr().set_style_or_warn("background", background);
         self
     }
 
     pub fn set_display(&self, display: &str) -> &Self {
-        self.dom.set_style_or_warn("display", display);
+        self.js_repr().set_style_or_warn("display", display);
         self
     }
 
     pub fn set_border_radius(&self, radius: f64) -> &Self {
-        self.dom.set_style_or_warn("border-radius", &format!("{}px", radius));
+        self.js_repr().set_style_or_warn("border-radius", &format!("{}px", radius));
         self
     }
 
@@ -447,7 +604,7 @@ impl EventTarget {
             src.emit(event);
         });
         let callback_js = callback.as_ref().unchecked_ref();
-        self.dom.add_event_listener_with_callback("mousedown", callback_js);
+        self.js_repr().add_event_listener_with_callback("mousedown", callback_js);
         mem::forget(callback);
         event
     }
@@ -456,6 +613,33 @@ impl EventTarget {
 trait OnEvent<Event: frp::Data> {
     fn on_event_impl(&self) -> frp::Sampler<Event>;
 }
+
+
+
+// ==============
+// === Object ===
+// ==============
+
+type Object = ObjectTemplate<web::JsValue>;
+
+#[repr(transparent)]
+#[derive(Debug, Clone, From)]
+struct ObjectTemplate<T> {
+    js_value: T,
+}
+
+impl<T: JsBaseObject> ObjectTemplate<T> {
+    pub fn new() -> Self {
+        Self { js_value: JsBaseObject::default() }
+    }
+}
+
+impl<T: JsBaseObject> Default for ObjectTemplate<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 
 // ========================
 // === Init Application ===
@@ -478,15 +662,15 @@ fn init(app: &Application) {
     let scene = &world.default_scene;
     let dom_front_layer = &scene.dom.layers.front;
 
-    let root = EventTarget::from(
+    let root = HtmlDivElement::from(
         web::document
             .get_element_by_id("html-root")
             .unwrap()
             .unchecked_into::<web::HtmlDivElement>(),
     );
-    let div1 = EventTarget::new();
+    let div1 = HtmlDivElement::new();
     div1.set_width(100.0).set_height(100.0).set_background("red").set_border_radius(10.0);
-    let div2 = EventTarget::new();
+    let div2 = HtmlDivElement::new();
     div2.set_width(100.0).set_height(100.0).set_background("green").set_border_radius(10.0);
     root.append_child(&div1);
     root.append_child(&div2);
