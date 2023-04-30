@@ -454,12 +454,51 @@ impl AsRef<web::EventTarget> for EventTarget {
     }
 }
 
-// FIXME
+impl AsRef<web::JsValue> for EventTarget {
+    fn as_ref(&self) -> &web::JsValue {
+        self.object.as_ref()
+    }
+}
+
+impl From<EventTarget> for JsValue {
+    fn from(t: EventTarget) -> Self {
+        t.object.into()
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl mock::MockData for EventTarget {}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl mock::MockDefault for EventTarget {
+    fn mock_default() -> Self {
+        Self { object: mock::MockDefault::mock_default() }
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+impl JsCast for EventTarget {
+    fn instanceof(val: &JsValue) -> bool {
+        web::Object::instanceof(val)
+    }
+    fn unchecked_from_js(val: JsValue) -> Self {
+        Self { object: JsCast::unchecked_from_js(val) }
+    }
+    fn unchecked_from_js_ref(val: &JsValue) -> &Self {
+        unsafe { &*(val as *const JsValue as *const Self) }
+    }
+}
+
+
 impl From<web::EventTarget> for EventTarget {
     fn from(t: web::EventTarget) -> Self {
-        let foo: web::Object = t.into();
-        let object = Object::from(foo);
-        Self { object }
+        t.unchecked_into()
+    }
+}
+
+impl From<EventTarget> for web::EventTarget {
+    fn from(t: EventTarget) -> Self {
+        t.unchecked_into()
     }
 }
 
