@@ -35,6 +35,7 @@ use ensogl_core::display::navigation::navigator::Navigator;
 use ensogl_core::display::symbol::DomSymbol;
 use ensogl_core::display::world;
 use ensogl_core::system::web;
+use ensogl_core::system::web::binding::mock;
 use ensogl_core::system::web::dom::Shape;
 use ensogl_core::system::web::traits::*;
 use ensogl_slider as slider;
@@ -336,50 +337,279 @@ impl JsBaseObject for web::HtmlDivElement {
 
 
 
+pub trait HasJsRepr {
+    type JsRepr;
+    fn js_repr(&self) -> &Self::JsRepr
+    where Self: AsRef<Self::JsRepr> {
+        self.as_ref()
+    }
+}
+
+pub type JsRepr<T> = <T as HasJsRepr>::JsRepr;
+
+
+pub trait UncheckedFrom<T>: Sized {
+    fn unchecked_from(value: T) -> Self;
+}
+
+pub struct WrongCast {}
+
+
+
+macro_rules! def_wrapper {
+    ($name:ident <- $base:ident) => {
+        #[derive(AsRef, Debug, Clone, Deref, Into)]
+        struct Object {
+            js_value: web::JsValue,
+        }
+    };
+}
+
+
+// ==============
+// === Object ===
+// ==============
+
+def_wrapper! {
+    Object <- JsValue
+}
+
+#[repr(transparent)]
+#[derive(AsRef, Debug, Clone, Deref, Into)]
+struct Object {
+    js_value: web::JsValue,
+}
+
+impl HasJsRepr for Object {
+    type JsRepr = web::Object;
+}
+
+impl AsRef<web::Object> for Object {
+    fn as_ref(&self) -> &web::Object {
+        self.unchecked_ref()
+    }
+}
+
+impl From<web::Object> for Object {
+    fn from(t: web::Object) -> Self {
+        Self { js_value: t.unchecked_into() }
+    }
+}
+
+impl UncheckedFrom<web::JsValue> for Object {
+    fn unchecked_from(js_value: web::JsValue) -> Self {
+        Self { js_value }
+    }
+}
+
+impl TryFrom<web::JsValue> for Object {
+    type Error = WrongCast;
+    fn try_from(t: web::JsValue) -> Result<Self, Self::Error> {
+        t.dyn_into::<web::Object>().map(|t| t.into()).map_err(|_| WrongCast {})
+    }
+}
+
+
+// ===================
+// === EventTarget ===
+// ===================
+
+
+thread_local! {
+    pub static LAST_EVENT_TARGET_ID: Cell<EventTargetId> = default();
+}
+
+fn next_node_id() -> EventTargetId {
+    LAST_EVENT_TARGET_ID.with(|id| {
+        let id = id.get();
+        id.checked_add(1).unwrap_or_else(|| panic!("Object ID overflow: {}", id))
+    })
+}
+
+type EventTargetId = usize;
+
+impl Eq for EventTarget {}
+impl PartialEq for EventTarget {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Hash for EventTarget {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state)
+    }
+}
+
+// FIXME
+impl From<Object> for EventTarget {
+    fn from(object: Object) -> Self {
+        let id = next_node_id();
+        Self { object, id }
+    }
+}
+
+
+#[derive(Debug, Clone, Deref)]
+struct EventTarget {
+    #[deref]
+    object: Object,
+    id:     EventTargetId,
+}
+
+impl HasJsRepr for EventTarget {
+    type JsRepr = web::EventTarget;
+}
+
+impl AsRef<web::EventTarget> for EventTarget {
+    fn as_ref(&self) -> &web::EventTarget {
+        self.unchecked_ref()
+    }
+}
+
+// impl From<web::JsValue> for EventTarget {
+//     fn from(js_value: web::JsValue) -> Self {
+//         let t: Object = js_value.into();
+//         Self::from(t)
+//     }
+// }
+
+impl EventTarget {
+    pub fn on_event<E: frp::Data>(&self) -> frp::Sampler<E>
+    where E: From<(web::JsValue, Shape)> {
+        add_listener_for(self)
+    }
+}
+
+
+// =============
+// === Node ====
+// =============
+
+#[derive(Debug, Clone, Deref, From)]
+struct Node {
+    event_target: EventTarget,
+}
+
+impl HasJsRepr for Node {
+    type JsRepr = web::Node;
+}
+
+impl AsRef<web::Node> for Node {
+    fn as_ref(&self) -> &web::Node {
+        self.unchecked_ref()
+    }
+}
+
+// impl From<web::JsValue> for Node {
+//     fn from(js_value: web::JsValue) -> Self {
+//         let t: EventTarget = js_value.into();
+//         Self::from(t)
+//     }
+// }
+
+// ===============
+// === Element ===
+// ===============
+
+#[repr(transparent)]
+#[derive(Debug, Clone, Deref)]
+struct Element {
+    node: Node,
+}
+
+impl HasJsRepr for Element {
+    type JsRepr = web::Element;
+}
+
+impl AsRef<web::Element> for Element {
+    fn as_ref(&self) -> &web::Element {
+        self.unchecked_ref()
+    }
+}
+
+// impl From<web::JsValue> for Element {
+//     fn from(js_value: web::JsValue) -> Self {
+//         Self { node: js_value.into() }
+//     }
+// }
+
+
+// ===================
+// === HtmlElement ===
+// ===================
+
+#[repr(transparent)]
+#[derive(Debug, Clone, Deref)]
+struct HtmlElement {
+    element: Element,
+}
+
+impl HasJsRepr for HtmlElement {
+    type JsRepr = web::HtmlElement;
+}
+
+impl AsRef<web::HtmlElement> for HtmlElement {
+    fn as_ref(&self) -> &web::HtmlElement {
+        self.unchecked_ref()
+    }
+}
+
+// impl From<web::JsValue> for HtmlElement {
+//     fn from(js_value: web::JsValue) -> Self {
+//         Self { element: js_value.into() }
+//     }
+// }
+
+
 // ======================
 // === HtmlDivElement ===
 // ======================
 
+
+
 type Div = HtmlDivElement;
-type HtmlDivElement = HtmlDivElementTemplate<web::HtmlDivElement>;
 
 #[repr(transparent)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct HtmlDivElementTemplate<T> {
-    html_element: HtmlElementTemplate<T>,
+#[derive(Debug, Clone, Deref)]
+struct HtmlDivElement {
+    html_element: HtmlElement,
 }
 
-impl<T: JsBaseObject> Default for HtmlDivElementTemplate<T> {
+impl HasJsRepr for HtmlDivElement {
+    type JsRepr = web::HtmlDivElement;
+}
+
+impl AsRef<web::HtmlDivElement> for HtmlDivElement {
+    fn as_ref(&self) -> &web::HtmlDivElement {
+        self.unchecked_ref()
+    }
+}
+
+// impl From<web::JsValue> for HtmlDivElement {
+//     fn from(js_value: web::JsValue) -> Self {
+//         Self { html_element: js_value.into() }
+//     }
+// }
+//
+// impl From<web::HtmlDivElement> for HtmlDivElement {
+//     fn from(t: web::HtmlDivElement) -> Self {
+//         Self::from(t.unchecked_into::<web::JsValue>())
+//     }
+// }
+
+impl Default for HtmlDivElement {
     fn default() -> Self {
-        Self { html_element: default() }
+        Self::new()
     }
 }
 
-impl<T: JsBaseObject> HtmlDivElementTemplate<T> {
+impl HtmlDivElement {
     pub fn new() -> Self {
-        default()
-    }
-
-    pub fn js_repr(&self) -> &T {
-        &self.html_element.element.node.event_target.object.js_value
+        panic!()
+        // Self::from(web::document.create_div_or_panic())
     }
 }
-
-impl<T> From<T> for HtmlDivElementTemplate<T> {
-    fn from(t: T) -> Self {
-        let html_element = HtmlElementTemplate::from(t);
-        Self { html_element }
-    }
-}
-
-
-impl Deref for HtmlDivElement {
-    type Target = HtmlElement;
-    fn deref(&self) -> &Self::Target {
-        unsafe { &*(self as *const HtmlDivElement as *const () as *const HtmlElement) }
-    }
-}
-
 
 impl HtmlDivElement {
     fn init(self) -> Self {
@@ -418,7 +648,7 @@ impl HtmlDivElement {
 }
 
 thread_local! {
-    pub static LISTENERS: RefCell<HashMap<web::JsValue, HashMap<TypeId, Listener>>> = default();
+    pub static LISTENERS: RefCell<HashMap<EventTargetId, HashMap<TypeId, Listener>>> = default();
 }
 
 pub struct Listener {
@@ -429,256 +659,33 @@ pub struct Listener {
 
 fn add_listener_for<E>(target: &EventTarget) -> frp::Sampler<E>
 where E: frp::Data + From<(web::JsValue, Shape)> {
-    // let network = frp::Network::new("event_listener");
-    // frp::extend! { network
-    //     src <- source::<E>();
-    //     event <- src.sampler();
-    //     trace src;
-    // }
-    //
-    // let scene = world::scene();
-    // let html_root = &scene.dom.html_root;
-    // let shape = html_root.shape.clone_ref();
-    // let callback = web::Closure::<dyn Fn(web::JsValue)>::new(move |js_val: web::JsValue| {
-    //     let shape = shape.value();
-    //     let event = E::from((js_val, shape));
-    //     src.emit(event);
-    // });
-    // let callback_js = callback.as_ref().unchecked_ref();
-    // target.js_repr().add_event_listener_with_callback("mousedown", callback_js);
-    //
-    // let listener = Listener { network, callback, event: Box::new(event.clone()) };
-    // let js_val: web::JsValue = (***target).clone();
-    // LISTENERS.with(|listeners| {
-    //     let mut listeners = listeners.borrow_mut();
-    //     let listeners = listeners.entry(js_val).or_default();
-    //     listeners.insert(TypeId::of::<E>(), listener);
-    // });
-    // event
-    panic!()
-}
-
-
-// ===================
-// === HtmlElement ===
-// ===================
-
-type HtmlElement = HtmlElementTemplate<web::HtmlElement>;
-
-#[repr(transparent)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct HtmlElementTemplate<T> {
-    element: ElementTemplate<T>,
-}
-
-impl<T: JsBaseObject> Default for HtmlElementTemplate<T> {
-    fn default() -> Self {
-        Self { element: default() }
+    let network = frp::Network::new("event_listener");
+    frp::extend! { network
+        src <- source::<E>();
+        event <- src.sampler();
+        trace src;
     }
+
+    let scene = world::scene();
+    let html_root = &scene.dom.html_root;
+    let shape = html_root.shape.clone_ref();
+    let callback = web::Closure::<dyn Fn(web::JsValue)>::new(move |js_val: web::JsValue| {
+        let shape = shape.value();
+        let event = E::from((js_val, shape));
+        src.emit(event);
+    });
+    let callback_js = callback.as_ref().unchecked_ref();
+    target.js_repr().add_event_listener_with_callback("mousedown", callback_js);
+
+    let listener = Listener { network, callback, event: Box::new(event.clone()) };
+    LISTENERS.with(|listeners| {
+        let mut listeners = listeners.borrow_mut();
+        let listeners = listeners.entry(target.id).or_default();
+        listeners.insert(TypeId::of::<E>(), listener);
+    });
+    event
 }
 
-impl<T: JsBaseObject> HtmlElementTemplate<T> {
-    pub fn new() -> Self {
-        default()
-    }
-}
-
-impl<T> From<T> for HtmlElementTemplate<T> {
-    fn from(t: T) -> Self {
-        let element = ElementTemplate::from(t);
-        Self { element }
-    }
-}
-
-impl Deref for HtmlElement {
-    type Target = Element;
-    fn deref(&self) -> &Self::Target {
-        unsafe { &*(self as *const HtmlElement as *const () as *const Element) }
-    }
-}
-
-
-// ===============
-// === Element ===
-// ===============
-
-type Element = ElementTemplate<web::Element>;
-
-#[repr(transparent)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct ElementTemplate<T> {
-    node: NodeTemplate<T>,
-}
-
-impl<T: JsBaseObject> Default for ElementTemplate<T> {
-    fn default() -> Self {
-        Self { node: default() }
-    }
-}
-
-impl<T: JsBaseObject> ElementTemplate<T> {
-    pub fn new() -> Self {
-        default()
-    }
-}
-
-impl<T> From<T> for ElementTemplate<T> {
-    fn from(t: T) -> Self {
-        let node = NodeTemplate::from(t);
-        Self { node }
-    }
-}
-
-impl Deref for Element {
-    type Target = Node;
-    fn deref(&self) -> &Self::Target {
-        unsafe { &*(self as *const Element as *const () as *const Node) }
-    }
-}
-
-
-
-// =============
-// === Node ====
-// =============
-
-type Node = NodeTemplate<web::Node>;
-
-#[repr(transparent)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct NodeTemplate<T> {
-    event_target: EventTargetTemplate<T>,
-}
-
-impl<T: JsBaseObject> Default for NodeTemplate<T> {
-    fn default() -> Self {
-        Self { event_target: default() }
-    }
-}
-
-impl<T: JsBaseObject> NodeTemplate<T> {
-    pub fn new() -> Self {
-        default()
-    }
-}
-
-impl<T> NodeTemplate<T> {
-    pub fn js_repr(&self) -> &T {
-        &self.event_target.object.js_value
-    }
-}
-
-impl<T> From<T> for NodeTemplate<T> {
-    fn from(t: T) -> Self {
-        let event_target = EventTargetTemplate::from(t);
-        Self { event_target }
-    }
-}
-
-impl Deref for Node {
-    type Target = EventTarget;
-    fn deref(&self) -> &Self::Target {
-        unsafe { &*(self as *const Node as *const () as *const EventTarget) }
-    }
-}
-
-
-
-// ===================
-// === EventTarget ===
-// ===================
-
-type EventTarget = EventTargetTemplate<web::HtmlDivElement>;
-
-#[derive(Debug, Clone)]
-struct EventTargetTemplate<T> {
-    object: ObjectTemplate<T>,
-}
-
-impl Deref for EventTarget {
-    type Target = Object;
-    fn deref(&self) -> &Self::Target {
-        unsafe { &*(self as *const EventTarget as *const () as *const Object) }
-    }
-}
-
-impl<T: JsBaseObject> Default for EventTargetTemplate<T> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<T> From<T> for EventTargetTemplate<T> {
-    fn from(t: T) -> Self {
-        let object = ObjectTemplate::from(t);
-        Self { object } //.init()
-    }
-}
-
-impl<T: JsBaseObject> EventTargetTemplate<T> {
-    pub fn new() -> Self {
-        let object: T = JsBaseObject::default();
-        Self::from(object)
-    }
-}
-
-impl<T> EventTargetTemplate<T> {
-    pub fn js_repr(&self) -> &T {
-        &self.object.js_value
-    }
-}
-
-impl EventTarget {
-    pub fn on_event<E: frp::Data>(&self) -> frp::Sampler<E>
-    where E: From<(web::JsValue, Shape)> {
-        add_listener_for(self)
-    }
-}
-
-impl<T: Eq> Eq for EventTargetTemplate<T> {}
-impl<T: PartialEq> PartialEq for EventTargetTemplate<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.object == other.object
-    }
-}
-
-impl<T: Hash> Hash for EventTargetTemplate<T> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.object.hash(state);
-    }
-}
-
-
-// ==============
-// === Object ===
-// ==============
-
-type Object = ObjectTemplate<web::JsValue>;
-
-#[repr(transparent)]
-#[derive(Debug, Clone, From, PartialEq, Eq, Hash)]
-struct ObjectTemplate<T> {
-    js_value: T,
-}
-
-impl<T: JsBaseObject> ObjectTemplate<T> {
-    pub fn new() -> Self {
-        Self { js_value: JsBaseObject::default() }
-    }
-}
-
-impl<T: JsBaseObject> Default for ObjectTemplate<T> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Deref for Object {
-    type Target = web::JsValue;
-    fn deref(&self) -> &Self::Target {
-        unsafe { &*(self as *const Object as *const () as *const web::JsValue) }
-    }
-}
 
 
 // ========================
@@ -702,39 +709,33 @@ fn init(app: &Application) {
     let scene = &world.default_scene;
     let dom_front_layer = &scene.dom.layers.front;
 
-    let root = Div::from(
-        web::document
-            .get_element_by_id("html-root")
-            .unwrap()
-            .unchecked_into::<web::HtmlDivElement>(),
-    );
-    let div1 = Div::new();
-    div1.set_width(100.0).set_height(100.0).set_background("red").set_border_radius(10.0);
-    let div2 = Div::new();
-    div2.set_width(100.0).set_height(100.0).set_background("green").set_border_radius(10.0);
-    root.append_child(&div1);
-    root.append_child(&div2);
-
-    let on_down = div1.on_event::<mouse::Down>();
-
-    let width = Rc::new(Cell::new(100.0));
-
-    let frp = glob::Frp::new();
-    let network = frp.network();
-    frp::extend! { network
-        trace on_down;
-        eval_ on_down ({
-            width.set(width.get() + 10.0);
-            div1.set_width(width.get());
-        });
-    }
-
-    // mem::forget(div1);
-    mem::forget(div2);
-    mem::forget(frp);
-
-    // dom_front_layer.manage(&object);
-
-    // mem::forget(div);
-    // mem::forget(object);
+    // let root = Div::from(
+    //     web::document
+    //         .get_element_by_id("html-root")
+    //         .unwrap()
+    //         .unchecked_into::<web::HtmlDivElement>(),
+    // );
+    // let div1 = Div::new();
+    // div1.set_width(100.0).set_height(100.0).set_background("red").set_border_radius(10.0);
+    // let div2 = Div::new();
+    // div2.set_width(100.0).set_height(100.0).set_background("green").set_border_radius(10.0);
+    // root.append_child(&div1);
+    // root.append_child(&div2);
+    //
+    // let on_down = div1.on_event::<mouse::Down>();
+    //
+    // let width = Rc::new(Cell::new(100.0));
+    //
+    // let frp = glob::Frp::new();
+    // let network = frp.network();
+    // frp::extend! { network
+    //     trace on_down;
+    //     eval_ on_down ({
+    //         width.set(width.get() + 10.0);
+    //         div1.set_width(width.get());
+    //     });
+    // }
+    //
+    // mem::forget(div2);
+    // mem::forget(frp);
 }
