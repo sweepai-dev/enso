@@ -22,6 +22,7 @@
 #![warn(unused_qualifications)]
 
 use ensogl_core::prelude::*;
+use std::any::TypeId;
 
 use enso_frp as frp;
 use ensogl_core::application::shortcut;
@@ -414,30 +415,47 @@ impl HtmlDivElement {
         self.js_repr().set_style_or_warn("border-radius", &format!("{}px", radius));
         self
     }
+}
 
-    pub fn on_event<E: frp::Data>(&self) -> frp::Sampler<E>
-    where E: From<(web::JsValue, Shape)> {
-        let network = self.frp.network();
-        frp::extend! { network
-            src <- source::<E>();
-            event <- src.sampler();
-            trace src;
-        }
+thread_local! {
+    pub static LISTENERS: RefCell<HashMap<web::JsValue, HashMap<TypeId, Listener>>> = default();
+}
 
-        let scene = world::scene();
-        let html_root = &scene.dom.html_root;
-        let shape = html_root.shape.clone_ref();
-        let callback = web::Closure::<dyn Fn(web::JsValue)>::new(move |js_val: web::JsValue| {
-            console_log!("!!!");
-            let shape = shape.value();
-            let event = E::from((js_val, shape));
-            src.emit(event);
-        });
-        let callback_js = callback.as_ref().unchecked_ref();
-        self.js_repr().add_event_listener_with_callback("mousedown", callback_js);
-        mem::forget(callback);
-        event
-    }
+pub struct Listener {
+    network:  frp::Network,
+    callback: web::Closure<dyn Fn(web::JsValue)>,
+    event:    Box<dyn Any>,
+}
+
+fn add_listener_for<E>(target: &EventTarget) -> frp::Sampler<E>
+where E: frp::Data + From<(web::JsValue, Shape)> {
+    // let network = frp::Network::new("event_listener");
+    // frp::extend! { network
+    //     src <- source::<E>();
+    //     event <- src.sampler();
+    //     trace src;
+    // }
+    //
+    // let scene = world::scene();
+    // let html_root = &scene.dom.html_root;
+    // let shape = html_root.shape.clone_ref();
+    // let callback = web::Closure::<dyn Fn(web::JsValue)>::new(move |js_val: web::JsValue| {
+    //     let shape = shape.value();
+    //     let event = E::from((js_val, shape));
+    //     src.emit(event);
+    // });
+    // let callback_js = callback.as_ref().unchecked_ref();
+    // target.js_repr().add_event_listener_with_callback("mousedown", callback_js);
+    //
+    // let listener = Listener { network, callback, event: Box::new(event.clone()) };
+    // let js_val: web::JsValue = (***target).clone();
+    // LISTENERS.with(|listeners| {
+    //     let mut listeners = listeners.borrow_mut();
+    //     let listeners = listeners.entry(js_val).or_default();
+    //     listeners.insert(TypeId::of::<E>(), listener);
+    // });
+    // event
+    panic!()
 }
 
 
@@ -574,18 +592,13 @@ type EventTarget = EventTargetTemplate<web::HtmlDivElement>;
 
 #[derive(Debug, Clone)]
 struct EventTargetTemplate<T> {
-    object:          ObjectTemplate<T>,
-    frp:             Frp,
-    event_listeners: Rc<RefCell<HashMap<std::any::TypeId, Box<dyn Any>>>>,
+    object: ObjectTemplate<T>,
 }
 
 impl Deref for EventTarget {
     type Target = Object;
     fn deref(&self) -> &Self::Target {
-        unsafe {
-            &*(&self.object as *const ObjectTemplate<web::HtmlDivElement> as *const ()
-                as *const Object)
-        }
+        unsafe { &*(self as *const EventTarget as *const () as *const Object) }
     }
 }
 
@@ -597,10 +610,8 @@ impl<T: JsBaseObject> Default for EventTargetTemplate<T> {
 
 impl<T> From<T> for EventTargetTemplate<T> {
     fn from(t: T) -> Self {
-        let frp = Frp::new();
-        let event_listeners = default();
         let object = ObjectTemplate::from(t);
-        Self { frp, object, event_listeners } //.init()
+        Self { object } //.init()
     }
 }
 
@@ -608,6 +619,19 @@ impl<T: JsBaseObject> EventTargetTemplate<T> {
     pub fn new() -> Self {
         let object: T = JsBaseObject::default();
         Self::from(object)
+    }
+}
+
+impl<T> EventTargetTemplate<T> {
+    pub fn js_repr(&self) -> &T {
+        &self.object.js_value
+    }
+}
+
+impl EventTarget {
+    pub fn on_event<E: frp::Data>(&self) -> frp::Sampler<E>
+    where E: From<(web::JsValue, Shape)> {
+        add_listener_for(self)
     }
 }
 
@@ -646,6 +670,13 @@ impl<T: JsBaseObject> ObjectTemplate<T> {
 impl<T: JsBaseObject> Default for ObjectTemplate<T> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Deref for Object {
+    type Target = web::JsValue;
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*(self as *const Object as *const () as *const web::JsValue) }
     }
 }
 
