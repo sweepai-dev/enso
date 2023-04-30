@@ -317,20 +317,63 @@ ensogl_core::define_endpoints! {
 
 
 struct Object {}
-struct EventTarget {}
-struct Node {}
-struct Element {}
-struct HtmlElement {}
+// struct EventTarget {}
+// struct Node {}
+// struct Element {}
+// struct HtmlElement {}
+// struct HtmlDivElement {}
 
-#[derive(Debug, Deref)]
-struct HtmlDivElement {
+
+#[derive(Debug, Deref, Default, Clone)]
+struct HtmlElement {
+    element: Element,
+}
+
+impl HtmlElement {
+    pub fn new() -> Self {
+        default()
+    }
+}
+
+#[derive(Debug, Deref, Default, Clone)]
+struct Element {
+    node: Node,
+}
+
+impl Element {
+    pub fn new() -> Self {
+        default()
+    }
+}
+
+#[derive(Debug, Deref, Default, Clone)]
+struct Node {
+    event_target: EventTarget,
+}
+
+impl Node {
+    pub fn new() -> Self {
+        default()
+    }
+}
+
+#[derive(Debug, Deref, Clone)]
+struct EventTargetTemplate<T> {
     frp:             Frp,
     #[deref]
-    dom:             web::HtmlDivElement,
+    dom:             T,
     event_listeners: Rc<RefCell<HashMap<std::any::TypeId, Box<dyn Any>>>>,
 }
 
-impl From<web::HtmlDivElement> for HtmlDivElement {
+type EventTarget = EventTargetTemplate<web::HtmlDivElement>;
+
+impl Default for EventTarget {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl From<web::HtmlDivElement> for EventTarget {
     fn from(dom: web::HtmlDivElement) -> Self {
         let frp = Frp::new();
         let event_listeners = default();
@@ -338,7 +381,15 @@ impl From<web::HtmlDivElement> for HtmlDivElement {
     }
 }
 
-impl HtmlDivElement {
+// impl From<web::EventTarget> for EventTarget {
+//     fn from(dom: web::EventTarget) -> Self {
+//         let frp = Frp::new();
+//         let event_listeners = default();
+//         Self { frp, dom, event_listeners }.init()
+//     }
+// }
+
+impl EventTarget {
     pub fn new() -> Self {
         Self::from(web::document.create_div_or_panic())
     }
@@ -427,15 +478,15 @@ fn init(app: &Application) {
     let scene = &world.default_scene;
     let dom_front_layer = &scene.dom.layers.front;
 
-    let root = HtmlDivElement::from(
+    let root = EventTarget::from(
         web::document
             .get_element_by_id("html-root")
             .unwrap()
             .unchecked_into::<web::HtmlDivElement>(),
     );
-    let div1 = HtmlDivElement::new();
+    let div1 = EventTarget::new();
     div1.set_width(100.0).set_height(100.0).set_background("red").set_border_radius(10.0);
-    let div2 = HtmlDivElement::new();
+    let div2 = EventTarget::new();
     div2.set_width(100.0).set_height(100.0).set_background("green").set_border_radius(10.0);
     root.append_child(&div1);
     root.append_child(&div2);
