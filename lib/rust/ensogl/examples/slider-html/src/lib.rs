@@ -28,11 +28,10 @@ use enso_frp as frp;
 use ensogl_core::application::shortcut;
 use ensogl_core::application::Application;
 use ensogl_core::application::View;
-use ensogl_core::control::io::mouse;
 use ensogl_core::data::color;
 use ensogl_core::display;
 use ensogl_core::display::navigation::navigator::Navigator;
-use ensogl_core::dom::*;
+use ensogl_core::dom;
 use ensogl_core::system::web;
 use ensogl_core::system::web::traits::*;
 use ensogl_slider as slider;
@@ -338,20 +337,20 @@ fn init(app: &Application) {
     let scene = &world.default_scene;
     let dom_front_layer = &scene.dom.layers.front;
 
-    let root = HtmlDivElement::from(
+    let root = dom::Div::from(
         web::document
             .get_element_by_id("html-root")
             .unwrap()
             .unchecked_into::<web::HtmlDivElement>(),
     );
-    let div1 = HtmlDivElement::new();
+    let div1 = dom::Div::new();
     div1.set_width(100.0).set_height(100.0).set_background("red").set_border_radius(10.0);
-    let div2 = HtmlDivElement::new();
+    let div2 = dom::Div::new();
     div2.set_width(100.0).set_height(100.0).set_background("green").set_border_radius(10.0);
     root.append_child(&div1);
     root.append_child(&div2);
 
-    let on_down = div1.on_event::<mouse::Down>();
+    let on_down = div1.on_event::<dom::event::Down>();
 
     let width = Rc::new(Cell::new(100.0));
 

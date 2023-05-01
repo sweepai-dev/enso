@@ -592,6 +592,7 @@ mock_data! { KeyboardEvent => Event
 
 // === MouseEvent ===
 mock_data! { MouseEvent => Event
+    fn new(type_arg: &str) -> Result<MouseEvent, JsValue>;
     fn button(&self) -> i16;
     fn alt_key(&self) -> bool;
     fn ctrl_key(&self) -> bool;

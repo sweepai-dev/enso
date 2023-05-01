@@ -7,6 +7,8 @@ use crate::system::web::traits::*;
 
 use std::any::TypeId;
 
+pub mod event;
+
 
 pub trait UncheckedFrom<T> {
     fn unchecked_from(t: T) -> Self;
@@ -182,7 +184,7 @@ impl HasJsRepr for EventTarget {
 
 impl EventTarget {
     pub fn on_event<E: frp::Data>(&self) -> frp::Sampler<E>
-    where E: From<(web::JsValue, Shape)> {
+    where E: From<web::JsValue> {
         let network = frp::Network::new("event_listener");
         frp::extend! { network
             src <- source::<E>();
@@ -190,13 +192,8 @@ impl EventTarget {
             trace src;
         }
 
-        let scene = world::scene();
-        let html_root = &scene.dom.html_root;
-        let shape = html_root.shape.clone_ref();
         let callback = web::Closure::<dyn Fn(web::JsValue)>::new(move |js_val: web::JsValue| {
-            let shape = shape.value();
-            let event = E::from((js_val, shape));
-            src.emit(event);
+            src.emit(E::from(js_val));
         });
         let callback_js = callback.as_ref().unchecked_ref();
         self.js_repr().add_event_listener_with_callback("mousedown", callback_js);
@@ -453,6 +450,7 @@ impl UncheckedFrom<web::HtmlDivElement> for HtmlElement {
 // ======================
 
 
+pub type Div = HtmlDivElement;
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Deref)]
