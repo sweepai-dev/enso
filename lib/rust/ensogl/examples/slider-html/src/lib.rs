@@ -34,6 +34,7 @@ use ensogl_core::display::navigation::navigator::Navigator;
 use ensogl_core::dom;
 use ensogl_core::system::web;
 use ensogl_core::system::web::traits::*;
+use ensogl_core::Animation;
 use ensogl_slider as slider;
 use ensogl_text_msdf::run_once_initialized;
 
@@ -360,18 +361,19 @@ fn init(app: &Application) {
     root.append_child(&div1);
     root.append_child(&div2);
 
-    let on_down = div1.on_event::<dom::event::Down>();
-
-    let width = Rc::new(Cell::new(100.0));
 
     let frp = glob::Frp::new();
     let network = frp.network();
+    let on_down = div1.on_event::<dom::event::Down>();
+    let width_target = Rc::new(Cell::new(100.0));
+    let width = Animation::<f32>::new_with_init(network, width_target.get());
     frp::extend! { network
         trace on_down;
-        eval_ on_down ({
-            width.set(width.get() + 10.0);
-            div1.set_width(width.get());
+        width.target <+ on_down.map (move |_| {
+            width_target.set(width_target.get() + 40.0);
+            width_target.get()
         });
+        eval width.value ((w) {div1.set_width(*w as f64);});
     }
 
     mem::forget(root);

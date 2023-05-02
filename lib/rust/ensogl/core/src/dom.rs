@@ -54,16 +54,16 @@ pub type UntrackedRepr<T> = <T as HasUntrackedRepr>::UntrackedRepr;
 
 // type JsValue = untracked::JsValue;
 
-pub trait Initializer {
-    fn init(&self);
+pub trait TrackingInitializer {
+    fn init_tracking(&self);
 }
 
-impl<T: untracked::JsCast> Initializer for T {
-    fn init(&self) {}
+impl<T: untracked::JsCast> TrackingInitializer for T {
+    fn init_tracking(&self) {}
 }
 
 pub trait Cast
-where Self: Initializer + AsRef<untracked::JsValue> + Into<untracked::JsValue> {
+where Self: TrackingInitializer + AsRef<untracked::JsValue> + Into<untracked::JsValue> {
     // Required methods
 
     fn instanceof(val: &untracked::JsValue) -> bool;
@@ -113,7 +113,7 @@ mod cast_helper {
     use super::*;
 
     pub trait CastHelper<T>
-    where Self: Initializer + AsRef<untracked::JsValue> + Into<untracked::JsValue> {
+    where Self: TrackingInitializer + AsRef<untracked::JsValue> + Into<untracked::JsValue> {
         fn has_type(&self) -> bool;
         fn dyn_into(self) -> Result<T, Self>;
         fn dyn_ref(&self) -> Option<&T>;
@@ -145,7 +145,7 @@ mod cast_helper {
 
         default fn unchecked_into(self) -> T {
             let out = T::unchecked_from_js(self.into());
-            out.init();
+            out.init_tracking();
             out
         }
 
@@ -186,7 +186,7 @@ mod cast_helper {
 }
 
 impl<S: untracked::JsCast> Cast for S
-where S: Initializer + AsRef<untracked::JsValue> + Into<untracked::JsValue>
+where S: TrackingInitializer + AsRef<untracked::JsValue> + Into<untracked::JsValue>
 {
     fn instanceof(val: &untracked::JsValue) -> bool {
         <S as untracked::JsCast>::instanceof(val)
@@ -212,9 +212,9 @@ macro_rules! wrapper {
         starting_wrapper! { $(#$meta)* $name [$base $(,$bases)*] }
         wrapper_web_conversions! { $name [$name, $base $(,$bases)*] }
 
-        impl Initializer for $name {
-            fn init(&self) {
-                (**self).init();
+        impl TrackingInitializer for $name {
+            fn init_tracking(&self) {
+                (**self).init_tracking();
             }
         }
     }
@@ -237,6 +237,12 @@ macro_rules! wrapper_struct {
             pub struct $name {
                 #[allow(missing_docs)]
                 pub [<$base:snake>]: $base,
+            }
+
+            impl CloneRef for $name {
+                fn clone_ref(&self) -> Self {
+                    self.clone()
+                }
             }
 
             impl HasUntrackedRepr for $name {
@@ -417,8 +423,8 @@ impl Drop for JsValue {
     }
 }
 
-impl Initializer for JsValue {
-    fn init(&self) {
+impl TrackingInitializer for JsValue {
+    fn init_tracking(&self) {
         inc_value_ref_count(self.value_id());
     }
 }
@@ -508,10 +514,12 @@ wrapper! {
 
 impl Drop for EventTarget {
     fn drop(&mut self) {
-        LISTENERS.with(|listeners| {
-            listeners.borrow_mut().remove(&self.value_id());
-            // We do not need to unregister listeners as the object is dropped.
-        })
+        if value_ref_count(self.value_id()) == 1 {
+            LISTENERS.with(|listeners| {
+                listeners.borrow_mut().remove(&self.value_id());
+                // We do not need to unregister listeners as the object is dropped.
+            })
+        }
     }
 }
 
@@ -692,5 +700,5 @@ impl HtmlDivElement {
 }
 
 impl HtmlDivElement {
-    fn init(&self) {}
+    fn init_tracking(&self) {}
 }
