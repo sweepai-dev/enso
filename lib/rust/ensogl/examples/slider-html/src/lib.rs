@@ -360,22 +360,21 @@ fn init(app: &Application) {
     root.append_child(&div1);
     root.append_child(&div2);
 
-    // let on_down = div1.on_event::<dom::event::Down>();
-    //
-    // let width = Rc::new(Cell::new(100.0));
-    //
-    // let frp = glob::Frp::new();
-    // let network = frp.network();
-    // frp::extend! { network
-    //     trace on_down;
-    //     eval_ on_down ({
-    //         width.set(width.get() + 10.0);
-    //         div1.set_width(width.get());
-    //     });
-    // }
+    let on_down = div1.on_event::<dom::event::Down>();
+
+    let width = Rc::new(Cell::new(100.0));
+
+    let frp = glob::Frp::new();
+    let network = frp.network();
+    frp::extend! { network
+        trace on_down;
+        eval_ on_down ({
+            width.set(width.get() + 10.0);
+            div1.set_width(width.get());
+        });
+    }
 
     mem::forget(root);
-    mem::forget(div1);
     mem::forget(div2.clone());
-    // mem::forget(frp);
+    mem::forget(frp);
 }
