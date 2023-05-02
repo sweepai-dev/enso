@@ -2996,7 +2996,7 @@ dependencies = [
  "enso-frp",
  "ensogl-core",
  "ensogl-hardcoded-theme",
- "ensogl-slider",
+ "ensogl-slider-html",
  "ensogl-text-msdf",
  "js-sys",
  "wasm-bindgen",
@@ -3230,6 +3230,17 @@ dependencies = [
 
 [[package]]
 name = "ensogl-slider"
+version = "0.1.0"
+dependencies = [
+ "enso-frp",
+ "ensogl-core",
+ "ensogl-hardcoded-theme",
+ "ensogl-text",
+ "ensogl-tooltip",
+]
+
+[[package]]
+name = "ensogl-slider-html"
 version = "0.1.0"
 dependencies = [
  "enso-frp",

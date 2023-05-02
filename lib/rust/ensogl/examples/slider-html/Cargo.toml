@@ -12,7 +12,7 @@ enso-frp = { path = "../../../frp" }
 ensogl-core = { path = "../../core" }
 ensogl-hardcoded-theme = { path = "../../app/theme/hardcoded" }
 ensogl-text-msdf = { path = "../../component/text/src/font/msdf" }
-ensogl-slider = { path = "../../component/slider" }
+ensogl-slider-html = { path = "../../component/slider-html" }
 wasm-bindgen = { workspace = true }
 js-sys = { workspace = true }
 

@@ -36,7 +36,7 @@ use ensogl_core::dom::traits::*;
 use ensogl_core::system::web;
 use ensogl_core::system::web::traits::*;
 use ensogl_core::Animation;
-use ensogl_slider as slider;
+use ensogl_slider_html as slider;
 use ensogl_text_msdf::run_once_initialized;
 
 
@@ -71,15 +71,24 @@ impl Model {
 
     /// Add example sliders to scene.
     fn init_sliders(&self) {
+        let world = self.app.display.clone();
+        let scene = &world.default_scene;
+
         let slider1 = self.app.new_view::<slider::Slider>();
-        slider1.set_size((200.0, 24.0));
-        slider1.set_y(-120.0);
+        // FIXME commented
+        // slider1.set_size((200.0, 24.0));
+        // slider1.set_y(-120.0);
+
+        // FIXME mock
+        slider1.model.root.set_width(200.0);
+        slider1.model.root.set_height(24.0);
+
         slider1.frp.set_value_indicator_color(color::Lcha(0.4, 0.7, 0.7, 1.0));
         slider1.frp.set_label("Soft limits + tooltip");
         slider1.frp.set_lower_limit_type(slider::SliderLimit::Soft);
         slider1.frp.set_upper_limit_type(slider::SliderLimit::Soft);
         slider1.frp.set_tooltip("Slider information tooltip.");
-        self.root.add_child(&slider1);
+        scene.append_child(&slider1.model.root);
         self.sliders.borrow_mut().push(slider1);
 
         // # IMPORTANT
@@ -189,12 +198,13 @@ impl Model {
         // self.sliders.borrow_mut().push(slider10);
     }
 
-    /// Drop all sliders from scene.
-    fn drop_sliders(&self) {
-        for slider in self.sliders.borrow_mut().drain(0..) {
-            self.root.remove_child(&slider);
-        }
-    }
+    // FIXME: commented
+    // /// Drop all sliders from scene.
+    // fn drop_sliders(&self) {
+    //     for slider in self.sliders.borrow_mut().drain(0..) {
+    //         self.root.remove_child(&slider);
+    //     }
+    // }
 }
 
 impl display::Object for Model {
@@ -258,7 +268,8 @@ mod slider_collection {
 
             frp::extend! { network
                 eval_ input.init_sliders( model.init_sliders() );
-                eval_ input.drop_sliders( model.drop_sliders() );
+                // FIXME: commented
+                // eval_ input.drop_sliders( model.drop_sliders() );
             }
             self
         }
