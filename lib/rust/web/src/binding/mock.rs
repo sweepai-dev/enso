@@ -463,6 +463,23 @@ impl From<&JsString> for String {
     }
 }
 
+// === Number ===
+mock_data! { Number => Object
+}
+
+impl From<Number> for f64 {
+    fn from(_: Number) -> Self {
+        0.0
+    }
+}
+
+impl From<f64> for Number {
+    fn from(_: f64) -> Self {
+        mock_default()
+    }
+}
+
+
 
 // === Array ===
 mock_data! { Array => Object

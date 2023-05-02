@@ -93,14 +93,22 @@ pub use binding::mock::*;
 macro_rules! gen_trait_modules {
     ( $($name:ident),* $(,)?) => {
         /// WASM-target oriented traits. Extending the possibilities of wasm-bindgen structures.
-        pub mod wasm_traits {
+        pub mod wasm_traits_no_js_cast {
             $(pub use super::$name::WasmTrait as $name;)*
+        }
+
+        pub mod wasm_traits {
+            pub use super::wasm_traits_no_js_cast::*;
             pub use super::binding::wasm::JsCast;
         }
 
         /// Mock traits. Counterpart of [`wasm_traits`].
-        pub mod mock_traits {
+        pub mod mock_traits_no_js_cast {
             $(pub use super::$name::MockTrait as $name;)*
+        }
+
+        pub mod mock_traits {
+            pub use super::mock_traits_no_js_cast::*;
             pub use super::binding::mock::JsCast;
         }
 
@@ -133,6 +141,14 @@ pub mod traits {
     pub use super::mock_traits::*;
     #[cfg(target_arch = "wasm32")]
     pub use super::wasm_traits::*;
+}
+
+pub mod traits_no_js_cast {
+    pub use super::anonymous_traits::*;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use super::mock_traits_no_js_cast::*;
+    #[cfg(target_arch = "wasm32")]
+    pub use super::wasm_traits_no_js_cast::*;
 }
 
 /// Helper for generating extensions to web API targeting the Wasm32 architecture (defined by

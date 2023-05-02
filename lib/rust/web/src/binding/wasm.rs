@@ -12,6 +12,7 @@ pub use js_sys::Error;
 pub use js_sys::Function;
 pub use js_sys::JsString;
 pub use js_sys::Map;
+pub use js_sys::Number;
 pub use js_sys::Object;
 pub use js_sys::Promise;
 pub use std::time::Duration;

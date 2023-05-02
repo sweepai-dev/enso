@@ -337,12 +337,22 @@ fn init(app: &Application) {
     let scene = &world.default_scene;
     let dom_front_layer = &scene.dom.layers.front;
 
+    console_log!("\n\n>> root");
     let root = dom::Div::from(
         web::document
             .get_element_by_id("html-root")
             .unwrap()
             .unchecked_into::<web::HtmlDivElement>(),
     );
+
+    console_log!("\n\n>> root2");
+    let root2 = dom::Div::from(
+        web::document
+            .get_element_by_id("html-root")
+            .unwrap()
+            .unchecked_into::<web::HtmlDivElement>(),
+    );
+
     let div1 = dom::Div::new();
     div1.set_width(100.0).set_height(100.0).set_background("red").set_border_radius(10.0);
     let div2 = dom::Div::new();
@@ -350,20 +360,20 @@ fn init(app: &Application) {
     root.append_child(&div1);
     root.append_child(&div2);
 
-    let on_down = div1.on_event::<dom::event::Down>();
-
-    let width = Rc::new(Cell::new(100.0));
-
-    let frp = glob::Frp::new();
-    let network = frp.network();
-    frp::extend! { network
-        trace on_down;
-        eval_ on_down ({
-            width.set(width.get() + 10.0);
-            div1.set_width(width.get());
-        });
-    }
+    // let on_down = div1.on_event::<dom::event::Down>();
+    //
+    // let width = Rc::new(Cell::new(100.0));
+    //
+    // let frp = glob::Frp::new();
+    // let network = frp.network();
+    // frp::extend! { network
+    //     trace on_down;
+    //     eval_ on_down ({
+    //         width.set(width.get() + 10.0);
+    //         div1.set_width(width.get());
+    //     });
+    // }
 
     mem::forget(div2);
-    mem::forget(frp);
+    // mem::forget(frp);
 }
