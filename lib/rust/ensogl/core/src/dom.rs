@@ -1,7 +1,6 @@
 use crate::prelude::*;
 
 use crate::display::world;
-use crate::system::web;
 use crate::system::web::dom::Shape;
 use crate::system::web::traits_no_js_cast::*;
 
@@ -199,27 +198,33 @@ where S: Wrapper + AsRef<web::JsValue> + Into<web::JsValue>
 }
 
 
-
-type WebJsValue = web::JsValue;
+mod web {
+    pub use crate::system::web::*;
+    pub type UntrackedJsValue = JsValue;
+}
+use web::UntrackedJsValue;
 
 macro_rules! wrapper {
-    ($name:ident [$base:ident]) => {
+    ($(#$meta:tt)* $name:ident [$base:ident $(, $bases:ident)*]) => {
+        wrapper_no_web_conversions! { $(#$meta)* $name [$base $(,$bases)*] }
+        wrapper_web_conversions! { $name [$base $(,$bases)*] }
+    }
+}
+
+macro_rules! wrapper_no_web_conversions {
+    ($(#$meta:tt)* $name:ident [$base:ident $(, $bases:ident)*]) => {
+        wrapper_struct! { $(#$meta)* $name [$base] }
+        wrapper_conversions! { $name [$base $(,$bases)*] }
+    }
+}
+
+macro_rules! wrapper_struct {
+    ($(#$meta:tt)* $name:ident [$base:ident]) => {
         paste! {
-            #[derive(Debug, Clone, Deref,)]
+            $(#$meta)*
+            #[derive(Debug, Deref,)]
             pub struct $name {
                 [<$base:snake>]: $base,
-            }
-
-            impl From<$name> for web::JsValue {
-                fn from(t: $name) -> Self {
-                    t.[<$base:snake>].into()
-                }
-            }
-
-            impl AsRef<web::JsValue> for $name {
-                fn as_ref(&self) -> &web::JsValue {
-                    self.[<$base:snake>].as_ref()
-                }
             }
 
             impl Cast for $name {
@@ -239,16 +244,57 @@ macro_rules! wrapper {
     };
 }
 
+macro_rules! wrapper_conversions {
+    ($name:ident [$($base:ident),*]) => {
+        paste! {
+            $(
+                impl From<$name> for $base {
+                    fn from(t: $name) -> Self {
+                        t.unchecked_into()
+                    }
+                }
+
+                impl AsRef<$base> for $name {
+                    fn as_ref(&self) -> &$base {
+                        &self.[<$base:snake>]
+                    }
+                }
+            )*
+        }
+    };
+}
+
+macro_rules! wrapper_web_conversions {
+    ($name:ident [$($base:ident),*]) => {
+        paste! {
+            $(
+                impl From<$name> for web::$base {
+                    fn from(t: $name) -> Self {
+                        t.unchecked_into()
+                    }
+                }
+
+                impl AsRef<web::$base> for $name {
+                    fn as_ref(&self) -> &web::$base {
+                        &self.untracked_js_value.unchecked_ref()
+                    }
+                }
+            )*
+        }
+    };
+}
+
 
 // ===============
 // === JsValue ===
 // ===============
 
-pub const ValueIdKey: &str = "enso_value_id";
+pub const VALUE_ID_KEY: &str = "ensoValueId";
 pub type ValueId = usize;
 
 thread_local! {
     pub static NEXT_VALUE_ID: Cell<ValueId> = default();
+    pub static VALUE_REF_COUNT: RefCell<HashMap<ValueId, usize>> = default();
 }
 
 fn next_value_id() -> ValueId {
@@ -259,13 +305,50 @@ fn next_value_id() -> ValueId {
     })
 }
 
+fn value_ref_count(id: ValueId) -> usize {
+    VALUE_REF_COUNT.with(|ref_count| ref_count.borrow().get(&id).copied().unwrap_or(0))
+}
 
-wrapper! { JsValue [WebJsValue] }
+fn inc_value_ref_count(id: ValueId) -> usize {
+    VALUE_REF_COUNT.with(|ref_count| {
+        let mut ref_count = ref_count.borrow_mut();
+        let count = ref_count.entry(id).or_default();
+        *count += 1;
+        *count
+    })
+}
+
+fn dec_value_ref_count(id: ValueId) -> usize {
+    VALUE_REF_COUNT.with(|ref_count| {
+        let mut ref_count = ref_count.borrow_mut();
+        let count = ref_count.entry(id).or_default();
+        *count = count.saturating_sub(1);
+        *count
+    })
+}
+
+
+
+wrapper_no_web_conversions! {
+    JsValue [UntrackedJsValue]
+}
+
+impl Clone for JsValue {
+    fn clone(&self) -> Self {
+        inc_value_ref_count(self.value_id());
+        Self { untracked_js_value: self.untracked_js_value.clone() }
+    }
+}
+
+impl Drop for JsValue {
+    fn drop(&mut self) {
+        dec_value_ref_count(self.value_id());
+    }
+}
 
 impl Wrapper for JsValue {
     fn init(&self) {
-        console_log!("INIT! {:?}", self.web_js_value);
-        self.init_value_id();
+        inc_value_ref_count(self.value_id());
     }
 }
 
@@ -286,26 +369,15 @@ impl JsValue {
         found: impl FnOnce(web::Number) -> T,
         not_found: impl FnOnce(ValueId) -> T,
     ) -> T {
-        // FIXME: slow ValueIdKey.into()
-        let val = Reflect::get(&self, &ValueIdKey.into()).unwrap();
-        console_log!("check: {:?}", val);
-
-        let test = <web::Number as Cast>::is_type_of(&val.clone());
-        let test2 = <web::Number as web::JsCast>::is_type_of(&val.clone());
-        // let num: Result<web::Number, _> = val.clone().dyn_into();
+        // FIXME: slow VALUE_ID_KEY.into()
+        let val = Reflect::get(&self, &VALUE_ID_KEY.into()).unwrap();
         let num = val.clone().dyn_into::<web::Number>();
-        let num2 = web::JsCast::dyn_into::<web::Number>(val);
-        console_log!("test: {:?}", test);
-        console_log!("test2: {:?}", test2);
-        console_log!("num: {:?}", num);
-        console_log!("num2: {:?}", num2);
-
         match num {
             Ok(num) => found(num),
             Err(_) => {
                 let id = next_value_id();
-                Reflect::set(&self, &ValueIdKey.into(), &web::Number::from(id as f64)).unwrap();
-                console_log!("after set: {:?}", Reflect::get(&self, &ValueIdKey.into()).unwrap());
+                Reflect::set(&self, &VALUE_ID_KEY.into(), &web::Number::from(id as f64)).unwrap();
+                console_log!("after set: {:?}", Reflect::get(&self, &VALUE_ID_KEY.into()).unwrap());
                 not_found(id)
             }
         }
@@ -314,7 +386,7 @@ impl JsValue {
 
 impl From<web::Object> for JsValue {
     fn from(t: web::Object) -> Self {
-        Self { web_js_value: t.into() }
+        Self { untracked_js_value: t.into() }
     }
 }
 
@@ -322,7 +394,10 @@ impl From<web::Object> for JsValue {
 // === Object ===
 // ==============
 
-wrapper! { Object [JsValue] }
+wrapper! {
+    #[derive(Clone)]
+    Object [JsValue]
+}
 
 impl Wrapper for Object {
     fn init(&self) {
@@ -337,7 +412,7 @@ impl HasJsRepr for Object {
 
 impl From<Object> for web::Object {
     fn from(t: Object) -> Self {
-        t.js_value.web_js_value.unchecked_into()
+        t.js_value.untracked_js_value.clone().unchecked_into()
     }
 }
 
@@ -383,55 +458,8 @@ impl UncheckedFrom<web::HtmlDivElement> for Object {
 // ===================
 
 thread_local! {
-    pub static LISTENERS: RefCell<HashMap<EventTargetId, HashMap<TypeId, Listener>>> = default();
+    pub static LISTENERS: RefCell<HashMap<ValueId, HashMap<TypeId, Listener>>> = default();
 }
-
-
-
-fn add_listener_for<E>(target: &EventTarget) -> frp::Sampler<E>
-where E: frp::Data + From<(web::JsValue, Shape)> {
-    // let network = frp::Network::new("event_listener");
-    // frp::extend! { network
-    //     src <- source::<E>();
-    //     event <- src.sampler();
-    //     trace src;
-    // }
-    //
-    // let scene = world::scene();
-    // let html_root = &scene.dom.html_root;
-    // let shape = html_root.shape.clone_ref();
-    // let callback = web::Closure::<dyn Fn(web::JsValue)>::new(move |js_val: web::JsValue| {
-    //     let shape = shape.value();
-    //     let event = E::from((js_val, shape));
-    //     src.emit(event);
-    // });
-    // let callback_js = callback.as_ref().unchecked_ref();
-    // target.js_repr().add_event_listener_with_callback("mousedown", callback_js);
-    //
-    // let listener = Listener { network, callback, event: Box::new(event.clone()) };
-    // LISTENERS.with(|listeners| {
-    //     let mut listeners = listeners.borrow_mut();
-    //     let listeners = listeners.entry(target.id()).or_default();
-    //     listeners.insert(TypeId::of::<E>(), listener);
-    // });
-    // event
-    panic!()
-}
-
-
-thread_local! {
-    pub static LAST_EVENT_TARGET_ID: Cell<EventTargetId> = default();
-}
-
-fn next_event_target_id() -> EventTargetId {
-    LAST_EVENT_TARGET_ID.with(|id| {
-        let id = id.get();
-        id.checked_add(1).unwrap_or_else(|| panic!("Object ID overflow: {}", id))
-    })
-}
-
-type EventTargetId = usize;
-
 
 
 #[derive(Debug)]
@@ -442,7 +470,19 @@ pub struct Listener {
 }
 
 
-wrapper! { EventTarget [Object] }
+wrapper! {
+    #[derive(Clone)]
+    EventTarget [Object, JsValue]
+}
+
+impl Drop for EventTarget {
+    fn drop(&mut self) {
+        LISTENERS.with(|listeners| {
+            listeners.borrow_mut().remove(&self.value_id());
+            // We do not need to unregister listeners as the object is dropped.
+        })
+    }
+}
 
 impl Wrapper for EventTarget {
     fn init(&self) {
@@ -458,27 +498,26 @@ impl HasJsRepr for EventTarget {
 impl EventTarget {
     pub fn on_event<E: frp::Data>(&self) -> frp::Sampler<E>
     where E: From<web::JsValue> {
-        panic!()
-        // let network = frp::Network::new("event_listener");
-        // frp::extend! { network
-        //     src <- source::<E>();
-        //     event <- src.sampler();
-        //     trace src;
-        // }
-        //
-        // let callback = web::Closure::<dyn Fn(web::JsValue)>::new(move |js_val: web::JsValue| {
-        //     src.emit(E::from(js_val));
-        // });
-        // let callback_js = callback.as_ref().unchecked_ref();
-        // self.js_repr().add_event_listener_with_callback("mousedown", callback_js);
-        //
-        // let listener = Listener { network, callback, event: Box::new(event.clone()) };
-        // LISTENERS.with(|listeners| {
-        //     let mut listeners = listeners.borrow_mut();
-        //     let listeners = listeners.entry(self.event_target_id).or_default();
-        //     listeners.insert(TypeId::of::<E>(), listener);
-        // });
-        // event
+        let network = frp::Network::new("event_listener");
+        frp::extend! { network
+            src <- source::<E>();
+            event <- src.sampler();
+            trace src;
+        }
+
+        let callback = web::Closure::<dyn Fn(web::JsValue)>::new(move |js_val: web::JsValue| {
+            src.emit(E::from(js_val));
+        });
+        let callback_js = callback.as_ref().unchecked_ref();
+        self.js_repr().add_event_listener_with_callback("mousedown", callback_js).unwrap();
+
+        let listener = Listener { network, callback, event: Box::new(event.clone()) };
+        LISTENERS.with(|listeners| {
+            let mut listeners = listeners.borrow_mut();
+            let listeners = listeners.entry(self.value_id()).or_default();
+            listeners.insert(TypeId::of::<E>(), listener);
+        });
+        event
     }
 }
 
@@ -509,13 +548,20 @@ impl AsRef<web::EventTarget> for EventTarget {
 // === Node ====
 // =============
 
-
-thread_local! {
-    pub static NODE_COUNT: RefCell<HashMap<ValueId, usize>> = default();
+wrapper! {
+    #[derive(Clone)]
+    Node [EventTarget, Object, JsValue]
 }
 
+impl Node {}
 
-wrapper! { Node [EventTarget] }
+impl Drop for Node {
+    fn drop(&mut self) {
+        if value_ref_count(self.value_id()) == 1 {
+            self.remove_from_parent();
+        }
+    }
+}
 
 impl Wrapper for Node {
     fn init(&self) {
@@ -538,14 +584,13 @@ impl Node {
         self.js_repr().remove_child(child.js_repr()).is_ok()
     }
 
-    // pub fn remove_from_parent(&self) -> bool {
-    //     self.parent
-    //         .borrow()
-    //         .as_ref()
-    //         .and_then(|parent| parent.upgrade())
-    //         .map(|parent| parent.remove_child(self))
-    //         .unwrap_or(false)
-    // }
+    pub fn parent(&self) -> Option<Node> {
+        self.js_repr().parent_node().map(|parent| parent.unchecked_into())
+    }
+
+    pub fn remove_from_parent(&self) -> bool {
+        self.parent().map(|parent| parent.remove_child(self)).unwrap_or(false)
+    }
 }
 
 
@@ -572,7 +617,10 @@ impl UncheckedFrom<web::HtmlDivElement> for Node {
 // === Element ===
 // ===============
 
-wrapper! { Element [Node] }
+wrapper! {
+    #[derive(Clone)]
+    Element [Node, EventTarget, Object, JsValue]
+}
 
 impl Wrapper for Element {
     fn init(&self) {
@@ -607,7 +655,10 @@ impl UncheckedFrom<web::HtmlDivElement> for Element {
 // === HtmlElement ===
 // ===================
 
-wrapper! { HtmlElement [Element] }
+wrapper! {
+    #[derive(Clone)]
+    HtmlElement [Element, Node, EventTarget, Object, JsValue]
+}
 
 impl Wrapper for HtmlElement {
     fn init(&self) {
@@ -671,7 +722,10 @@ impl UncheckedFrom<web::HtmlDivElement> for HtmlElement {
 
 pub type Div = HtmlDivElement;
 
-wrapper! { HtmlDivElement [HtmlElement] }
+wrapper! {
+    #[derive(Clone)]
+    HtmlDivElement [HtmlElement, Element, Node, EventTarget, Object, JsValue]
+}
 
 impl Wrapper for HtmlDivElement {
     fn init(&self) {

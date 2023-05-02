@@ -374,6 +374,8 @@ fn init(app: &Application) {
     //     });
     // }
 
-    mem::forget(div2);
+    mem::forget(root);
+    mem::forget(div1);
+    mem::forget(div2.clone());
     // mem::forget(frp);
 }
