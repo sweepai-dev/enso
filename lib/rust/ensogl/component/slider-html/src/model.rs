@@ -1,6 +1,7 @@
 //! Model for the slider component.
 
 use ensogl_core::display::shape::*;
+use ensogl_core::dom::traits::*;
 use ensogl_core::prelude::*;
 
 use crate::LabelPosition;

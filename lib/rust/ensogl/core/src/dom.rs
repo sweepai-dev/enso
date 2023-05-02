@@ -22,6 +22,7 @@ pub use crate::system::web::document;
 
 pub mod traits {
     pub use super::Cast as TRAIT_Cast;
+    pub use super::HtmlElementOps as TRAIT_HtmlElementOps;
 }
 
 pub trait UncheckedFrom<T> {
@@ -639,6 +640,11 @@ wrapper! {
 // === HtmlElement ===
 // ===================
 
+pub trait Wrapper {
+    type Target;
+    fn as_dom(&self) -> &Self::Target;
+}
+
 wrapper! {
     /// The [`HtmlElement`] interface represents any HTML element. Some elements directly implement
     /// this interface, while others implement it via an interface that inherits it.
@@ -648,34 +654,55 @@ wrapper! {
     HtmlElement [Element, Node, EventTarget, Object, JsValue]
 }
 
-impl HtmlElement {
-    pub fn set_width(&self, width: f64) -> &Self {
-        self.untracked_repr().set_style_or_warn("width", &format!("{}px", width));
+pub trait HtmlElementOps
+where
+    Self: Wrapper,
+    <Self as Wrapper>::Target: AsRef<HtmlElement>, {
+    fn set_width(&self, width: f64) -> &Self {
+        self.as_dom().as_ref().untracked_repr().set_style_or_warn("width", &format!("{}px", width));
         self
     }
 
-    pub fn set_height(&self, width: f64) -> &Self {
-        self.untracked_repr().set_style_or_warn("height", &format!("{}px", width));
+    fn set_height(&self, width: f64) -> &Self {
+        self.as_dom()
+            .as_ref()
+            .untracked_repr()
+            .set_style_or_warn("height", &format!("{}px", width));
         self
     }
 
-    pub fn set_background(&self, background: &str) -> &Self {
-        self.untracked_repr().set_style_or_warn("background", background);
+    fn set_background(&self, background: &str) -> &Self {
+        self.as_dom().as_ref().untracked_repr().set_style_or_warn("background", background);
         self
     }
 
-    pub fn set_display(&self, display: &str) -> &Self {
-        self.untracked_repr().set_style_or_warn("display", display);
+    fn set_display(&self, display: &str) -> &Self {
+        self.as_dom().as_ref().untracked_repr().set_style_or_warn("display", display);
         self
     }
 
-    pub fn set_border_radius(&self, radius: f64) -> &Self {
-        self.untracked_repr().set_style_or_warn("border-radius", &format!("{}px", radius));
+    fn set_border_radius(&self, radius: f64) -> &Self {
+        self.as_dom()
+            .as_ref()
+            .untracked_repr()
+            .set_style_or_warn("border-radius", &format!("{}px", radius));
         self
     }
 }
 
+impl<T> HtmlElementOps for T
+where
+    T: Wrapper,
+    <T as Wrapper>::Target: AsRef<HtmlElement>,
+{
+}
 
+impl Wrapper for HtmlElement {
+    type Target = HtmlElement;
+    fn as_dom(&self) -> &Self::Target {
+        self
+    }
+}
 
 // ======================
 // === HtmlDivElement ===
@@ -708,4 +735,11 @@ impl HtmlDivElement {
 
 impl HtmlDivElement {
     fn init_tracking(&self) {}
+}
+
+impl Wrapper for HtmlDivElement {
+    type Target = HtmlDivElement;
+    fn as_dom(&self) -> &Self::Target {
+        self
+    }
 }

@@ -336,13 +336,13 @@ ensogl_core::define_endpoints_2! {
 pub struct Slider {
     /// Public FRP api of the component.
     #[deref]
-    pub frp: Frp,
+    pub frp:   Frp,
     // FIXME made pub
-    pub model:   Rc<Model>,
+    pub model: Rc<Model>,
     /// Reference to the application the component belongs to. Generally required for implementing
     /// `application::View` and initialising the `Model` and `Frp` and thus provided by the
     /// component.
-    pub app: Application,
+    pub app:   Application,
 }
 
 impl Slider {
@@ -844,11 +844,12 @@ impl Slider {
     }
 }
 
-// impl display::Object for Slider {
-//     fn display_object(&self) -> &display::object::Instance {
-//         self.model.display_object()
-//     }
-// }
+impl dom::Wrapper for Slider {
+    type Target = dom::Div;
+    fn as_dom(&self) -> &Self::Target {
+        &self.model.root
+    }
+}
 
 impl FrpNetworkProvider for Slider {
     fn network(&self) -> &enso_frp::Network {
