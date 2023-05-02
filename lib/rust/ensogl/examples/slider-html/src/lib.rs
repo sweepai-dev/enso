@@ -351,7 +351,6 @@ fn init(app: &Application) {
     let width_target = Rc::new(Cell::new(100.0));
     let width = Animation::<f32>::new_with_init(network, width_target.get());
     frp::extend! { network
-        trace on_down;
         width.target <+ on_down.map (move |_| {
             width_target.set(width_target.get() + 40.0);
             width_target.get()

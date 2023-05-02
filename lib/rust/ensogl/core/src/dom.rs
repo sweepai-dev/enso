@@ -407,7 +407,7 @@ fn dec_value_ref_count(id: ValueId) -> usize {
 
 starting_wrapper! {
     /// Any JavaScript value that references are tracked in Rust, as opposed to
-    /// `untracked::JsValue`, which references are not tracked. The tracking is used to
+    /// [`untracked::JsValue`], which references are not tracked. The tracking is used to
     /// automatically remove elements, such as divs, when all Rust references to them are dropped.
     ///
     /// # Warning
