@@ -9,6 +9,8 @@ use enso_web::binding::mock::MockData;
 use enso_web::binding::mock::MockDefault;
 use enso_web::Reflect;
 use std::any::TypeId;
+use unit2::Fraction;
+use unit2::Percent;
 
 pub mod event;
 
@@ -25,15 +27,68 @@ pub mod traits {
     pub use super::HtmlElementOps as TRAIT_HtmlElementOps;
 }
 
-pub trait UncheckedFrom<T> {
-    fn unchecked_from(t: T) -> Self;
+
+pub trait HasCssRepr {
+    fn to_css(&self) -> String;
 }
 
-impl<T, S: From<T>> UncheckedFrom<T> for S {
-    fn unchecked_from(t: T) -> Self {
-        Self::from(t)
+// ============
+// === Size ===
+// ============
+
+/// Unit for display object layout.
+#[derive(Clone, Copy, Debug, Display, PartialEq, From)]
+pub enum Size {
+    /// Pixel distance.
+    Pixels(f64),
+    /// Fraction of the unused space, if any. For example, if you set the layout gap to be
+    /// `1.fr()`, all the gaps will have the same size to fill all the space in the parent
+    /// container.
+    Fraction(Fraction),
+    /// Percent of the parent size.
+    Percent(Percent),
+}
+
+impl From<f32> for Size {
+    fn from(value: f32) -> Self {
+        Size::Pixels(value as f64)
     }
 }
+
+impl From<&f32> for Size {
+    fn from(value: &f32) -> Self {
+        Size::Pixels(*value as f64)
+    }
+}
+
+impl From<&f64> for Size {
+    fn from(value: &f64) -> Self {
+        Size::Pixels(*value)
+    }
+}
+
+impl From<i32> for Size {
+    fn from(value: i32) -> Self {
+        Size::Pixels(value as f64)
+    }
+}
+
+impl From<&i32> for Size {
+    fn from(value: &i32) -> Self {
+        Size::Pixels(*value as f64)
+    }
+}
+
+impl HasCssRepr for Size {
+    fn to_css(&self) -> String {
+        match self {
+            Size::Pixels(value) => format!("{}px", value),
+            Size::Percent(value) => format!("{}%", value),
+            Size::Fraction(value) => format!("{}fr", value),
+        }
+    }
+}
+
 
 
 // struct Object {}
@@ -640,6 +695,73 @@ wrapper! {
 // === HtmlElement ===
 // ===================
 
+macro_rules! define_enum_attr {
+    (
+        $(#$meta:tt)*
+        $name:ident {
+            $($variant:ident),* $(,)?
+        }
+    ) => {
+        paste! {
+            $(#$meta)*
+            #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+            pub enum $name {
+                $($variant),*
+            }
+
+            impl HasCssRepr for $name {
+                fn to_css(&self) -> String {
+                    match self {
+                        $($name::$variant => stringify!([<$variant:camel>]).to_string()),*
+                    }
+                }
+            }
+        }
+    };
+}
+
+macro_rules! define_enum_setters {
+    (
+        $(#$meta:tt)*
+        $name:ident {
+            $($variant:ident),* $(,)?
+        }
+    ) => {
+        paste! {
+            fn [<set_ $name:snake>](&self, t: $name) -> &Self {
+                let field = stringify!([<$name:camel>]);
+                self.as_dom().as_ref().untracked_repr().set_style_or_warn(field, &t.to_css());
+                self
+            }
+
+            $(
+                fn [<set_ $name:snake _ $variant:snake>](&self) -> &Self {
+                    self.[<set_ $name:snake>]($name::$variant)
+                }
+            )*
+        }
+    };
+}
+
+macro_rules! with_position_decl {
+    ($f:ident) => {
+        $f! {
+            Position {
+                Absolute,
+                Fixed,
+                Inherit,
+                Initial,
+                Relative,
+                Revert,
+                Static,
+                Sticky,
+                Unset,
+            }
+        }
+    };
+}
+with_position_decl!(define_enum_attr);
+
 pub trait Wrapper {
     type Target;
     fn as_dom(&self) -> &Self::Target;
@@ -658,28 +780,43 @@ pub trait HtmlElementOps
 where
     Self: Wrapper,
     <Self as Wrapper>::Target: AsRef<HtmlElement>, {
-    fn set_width(&self, width: f64) -> &Self {
-        self.as_dom().as_ref().untracked_repr().set_style_or_warn("width", &format!("{}px", width));
+    with_position_decl!(define_enum_setters);
+
+    fn set_width(&self, t: impl Into<Size>) -> &Self {
+        self.as_dom().as_ref().untracked_repr().set_style_or_warn("width", t.into().to_css());
         self
     }
 
-    fn set_width_str(&self, width: &str) -> &Self {
-        self.as_dom().as_ref().untracked_repr().set_style_or_warn("width", width);
+    fn set_height(&self, t: impl Into<Size>) -> &Self {
+        self.as_dom().as_ref().untracked_repr().set_style_or_warn("height", t.into().to_css());
         self
     }
 
-    fn set_position(&self, position: &str) -> &Self {
-        self.as_dom().as_ref().untracked_repr().set_style_or_warn("position", position);
-        self
+    fn set_size(&self, t: impl IntoVectorTrans2<Size>) -> &Self {
+        let vec = t.into_vector_trans();
+        self.set_width(vec.x).set_height(vec.y)
     }
 
-    fn set_height(&self, width: f64) -> &Self {
-        self.as_dom()
-            .as_ref()
-            .untracked_repr()
-            .set_style_or_warn("height", &format!("{}px", width));
-        self
-    }
+    // fn set_position_absolute(&self) -> &Self {
+    //     self.set_position("absolute")
+    // }
+    //
+    // fn set_position_fixed(&self) -> &Self {
+    //     self.set_position("fixed")
+    // }
+    //
+    // fn set_position_relative(&self) -> &Self {
+    //     self.set_position("relative")
+    // }
+    //
+    // fn set_position_static(&self) -> &Self {
+    //     self.set_position("static")
+    // }
+    //
+    // fn set_position_sticky(&self) -> &Self {
+    //     self.set_position("sticky")
+    // }
+
 
     fn set_background(&self, background: &str) -> &Self {
         self.as_dom().as_ref().untracked_repr().set_style_or_warn("background", background);

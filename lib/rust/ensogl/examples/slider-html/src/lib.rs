@@ -75,13 +75,10 @@ impl Model {
         let scene = &world.default_scene;
 
         let slider1 = self.app.new_view::<slider::Slider>();
+        slider1.set_size((200.0, 24.0));
         // FIXME commented
-        // slider1.set_size((200.0, 24.0));
         // slider1.set_y(-120.0);
 
-        // FIXME mock
-        slider1.set_width(200.0);
-        slider1.set_height(24.0);
 
         slider1.frp.set_value_indicator_color(color::Lcha(0.4, 0.7, 0.7, 1.0));
         slider1.frp.set_label("Soft limits + tooltip");

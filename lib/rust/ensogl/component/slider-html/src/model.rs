@@ -164,8 +164,10 @@ impl Model {
         let overflow_upper = overflow::View::new();
         let style = StyleWatch::new(&app.display.default_scene.style_sheet);
 
-        root.set_position("relative");
-        track.set_position("absolute");
+        root.set_position_relative();
+        track.set_position_absolute();
+        background.set_height(100.pc());
+        track.set_height(100.pc());
 
         root.append_child(&background);
         root.append_child(&track);
@@ -223,11 +225,9 @@ impl Model {
         // FIXME: commented
         // self.background.set_size(size);
         self.background.set_width(size.x as f64);
-        self.background.set_height(size.y as f64);
 
         // FIXME: commented
         // self.track.set_size(size);
-        self.track.set_height(size.y as f64);
 
         // FIXME: commented
         // self.background.set_x(size.x / 2.0);
@@ -250,7 +250,7 @@ impl Model {
     /// Set the position of the value indicator.
     pub fn set_indicator_position(&self, start: f32, end: f32, orientation: Axis2) {
         console_log!("set_indicator_position {} {}", start, end);
-        self.track.set_width_str(&format!("{}%", (end - start) * 100.0));
+        self.track.set_width(((end - start) * 100.0).pc());
         // FIXME: commented
         // match orientation {
         //     Axis2::X => {
