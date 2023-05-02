@@ -2,32 +2,48 @@
 
 use crate::prelude::*;
 use std::fmt::Write;
-use web::traits::*;
+// use web::traits::*;
 
 use crate::system::web;
 
-use enso_frp::io::mouse;
+use crate::dom;
+use crate::dom::traits::*;
+use enso_frp::io::mouse as mouse2;
 use enso_web::JsValue;
 use web::dom::Shape;
 
 
-
-// ===============
-// === IsEvent ===
-// ===============
+// ==================
+// === TypedEvent ===
+// ==================
 
 /// Trait allowing extracting the phantom type of [`Event`].
 #[allow(missing_docs)]
-pub trait IsEvent {
-    type PhantomType;
+pub trait TypedEvent {
+    type Type;
 }
-impl<Type, JsEvent> IsEvent for Event<Type, JsEvent> {
-    type PhantomType = Type;
+impl<Type, JsEvent> TypedEvent for Event<Type, JsEvent> {
+    type Type = Type;
 }
 
 /// Extract the phantom type of [`Event`].
-pub type EventType<T> = <T as IsEvent>::PhantomType;
+pub type EventType<T> = <T as TypedEvent>::Type;
 
+
+
+// =============
+// === Named ===
+// =============
+
+pub trait Named {
+    fn name() -> &'static str;
+}
+
+impl<Type: Named, JsEvent> Named for Event<Type, JsEvent> {
+    fn name() -> &'static str {
+        Type::name()
+    }
+}
 
 
 // =============
@@ -125,8 +141,8 @@ where JsEvent: AsRef<web::MouseEvent>
     }
 
     /// Indicates which button was pressed on the mouse to trigger the event.
-    pub fn button(&self) -> mouse::Button {
-        mouse::Button::from_code(self.js_event.as_ref().button().into())
+    pub fn button(&self) -> mouse2::Button {
+        mouse2::Button::from_code(self.js_event.as_ref().button().into())
     }
 
     /// Return the position relative to the event handler that was used to catch the event. If the
@@ -172,7 +188,7 @@ where JsEvent: AsRef<web::MouseEvent>
     }
 
     /// Convert the event to a different type. No checks will be performed during this action.
-    pub fn unchecked_convert_to<NewEventType: IsEvent>(
+    pub fn unchecked_convert_to<NewEventType: TypedEvent>(
         self,
     ) -> Event<EventType<NewEventType>, JsEvent> {
         let js_event = self.js_event;
@@ -187,139 +203,156 @@ where JsEvent: AsRef<web::MouseEvent>
 // === Events ===
 // ==============
 
-macro_rules! define_events {
-    ( $( $(#$meta:tt)* $name:ident <$js_event:ident> ),* $(,)? ) => {paste!{
-        $(
-            $(#$meta)*
-            #[derive(Copy, Clone, Debug, Default)]
-            pub struct [<Phantom $name>];
+/// Mouse events definitions.
+pub mod mouse {
+    use super::*;
 
-            impl TypeDisplay for [<Phantom $name>] {
-                fn type_display() -> String {
-                    stringify!($name).to_string()
+    macro_rules! define_events {
+        ( $( $(#$meta:tt)* $name:ident <$js_event:ident> ),* $(,)? ) => {paste!{
+            $(
+                $(#$meta)*
+                #[derive(Copy, Clone, Debug, Default)]
+                pub struct [<Phantom $name>];
+
+                impl Named for [<Phantom $name>] {
+                    fn name() -> &'static str {
+                        stringify!([<mouse $name:lower>])
+                    }
                 }
-            }
 
-            $(#$meta)*
-            pub type $name = Event<[<Phantom $name>], web::$js_event>;
-        )*
-    }};
-}
+                impl TypeDisplay for [<Phantom $name>] {
+                    fn type_display() -> String {
+                        stringify!($name).to_string()
+                    }
+                }
 
-define_events! {
-    // ======================
-    // === JS-like Events ===
-    // ======================
-    // These events are counterpart of the JavaScript events. They have the same behavior in the
-    // EnsoGL display object hierarchy. To learn more about them, see:
-    // - https://developer.mozilla.org/en-US/docs/Web/API/Element/mousedown_event
-    // - https://developer.mozilla.org/en-US/docs/Web/API/Element/mouseenter_event
-    // - https://developer.mozilla.org/en-US/docs/Web/API/Element/mouseleave_event
-    // - https://developer.mozilla.org/en-US/docs/Web/API/Element/mousemove_event
-    // - https://developer.mozilla.org/en-US/docs/Web/API/Element/mouseout_event
-    // - https://developer.mozilla.org/en-US/docs/Web/API/Element/mouseover_event
-    // - https://developer.mozilla.org/en-US/docs/Web/API/Element/mouseup_event
-    // - https://developer.mozilla.org/en-US/docs/Web/API/Element/wheel_event
-
-    /// The [`Down`] event is fired at an element when a button on a pointing device (such as a
-    /// mouse or trackpad) is pressed while the pointer is inside the element.
-    ///
-    /// The [`Down`] event is the counterpoint to the [`Up`] event.
-    Down<MouseEvent>,
-
-    /// The [`Up`] event is fired at an element when a button on a pointing device (such as a mouse
-    /// or trackpad) is released while the pointer is located inside it.
-    ///
-    /// The [`Up`] event is the counterpoint to the [`Down`] event.
-    Up<MouseEvent>,
-
-    /// The [`Move`] event is fired at an element when a pointing device (such as a mouse or
-    /// trackpad) is moved while the cursor's hotspot is inside it.
-    Move<MouseEvent>,
-
-    /// The [`Enter`] event is fired at an element when the cursor of a pointing device (such as a
-    /// mouse or trackpad) is initially moved so that its hotspot is within the element at which the
-    /// event was fired.
-    ///
-    /// Both [`Enter`] and [`Over`] events are similar but differ in that [`Enter`] does not bubble
-    /// and [`Over`] does. This means that [`Enter`] is fired when the pointer has entered the
-    /// element and all of its descendants, whereas [`Over`] is fired when the pointer enters the
-    /// element or enters one of the element's descendants (even if the pointer was already within
-    /// the element).
-    Enter<MouseEvent>,
-
-    /// The [`Leave`] event is fired at an element when the cursor of a pointing device (such as a
-    /// mouse or trackpad) is moved out of it.
-    ///
-    /// Both [`Leave`] and [`Out`] events are similar but differ in that [`Leave`] does not bubble
-    /// and [`Out`] does. This means that [`Leave`] is fired when the pointer has exited the element
-    /// and all of its descendants, whereas [`Out`] is fired when the pointer leaves the element or
-    /// leaves one of the element's descendants (even if the pointer is still within the element).
-    Leave<MouseEvent>,
-
-    /// The [`Over`] event is fired at an element when the cursor of a pointing device (such as a
-    /// mouse or trackpad) is moved onto the element or one of its child elements
-    ///
-    /// Both [`Enter`] and [`Over`] events are similar but differ in that [`Enter`] does not bubble
-    /// and [`Over`] does. This means that [`Enter`] is fired when the pointer has entered the
-    /// element and all of its descendants, whereas [`Over`] is fired when the pointer enters the
-    /// element or enters one of the element's descendants (even if the pointer was already within
-    /// the element).
-    Over<MouseEvent>,
-
-    /// The [`Out`] event is fired at an element when the cursor of a pointing device (such as a
-    /// mouse or trackpad) is moved so that it is no longer contained within the element or one of
-    /// its children.
-    ///
-    /// Both [`Leave`] and [`Out`] events are similar but differ in that [`Leave`] does not bubble
-    /// and [`Out`] does. This means that [`Leave`] is fired when the pointer has exited the element
-    /// and all of its descendants, whereas [`Out`] is fired when the pointer leaves the element or
-    /// leaves one of the element's descendants (even if the pointer is still within the element).
-    Out<MouseEvent>,
-
-    /// The wheel event fires when the user rotates a wheel button on a pointing device
-    /// (typically a mouse).
-    Wheel<WheelEvent>,
-
-
-
-    // ==========================
-    // === Non JS-like Events ===
-    // ==========================
-    // These events do not have their JavaScript counterpart and are EnsoGL-specific extensions to
-    // the mouse event family
-
-    /// The [`Release`] event is fired at an element when a button on a pointing device (such as a
-    /// mouse or trackpad) is released anywhere in the scene, if it was previously pressed on that
-    /// element.
-    ///
-    /// The [`Release`] event is similar to the [`Up`] event, but fires even if the mouse is outside
-    /// of the element it was initially pressed on.
-    Release<MouseEvent>,
-}
-
-impl Wheel {
-    /// The horizontal scroll amount.
-    pub fn delta_x(&self) -> f64 {
-        self.js_event.delta_x()
+                $(#$meta)*
+                pub type $name = Event<[<Phantom $name>], web::$js_event>;
+            )*
+        }};
     }
 
-    /// The vertical scroll amount.
-    pub fn delta_y(&self) -> f64 {
-        self.js_event.delta_y()
+    define_events! {
+        // ======================
+        // === JS-like Events ===
+        // ======================
+        // These events are counterpart of the JavaScript events:
+        // - https://developer.mozilla.org/en-US/docs/Web/API/Element/mousedown_event
+        // - https://developer.mozilla.org/en-US/docs/Web/API/Element/mouseenter_event
+        // - https://developer.mozilla.org/en-US/docs/Web/API/Element/mouseleave_event
+        // - https://developer.mozilla.org/en-US/docs/Web/API/Element/mousemove_event
+        // - https://developer.mozilla.org/en-US/docs/Web/API/Element/mouseout_event
+        // - https://developer.mozilla.org/en-US/docs/Web/API/Element/mouseover_event
+        // - https://developer.mozilla.org/en-US/docs/Web/API/Element/mouseup_event
+        // - https://developer.mozilla.org/en-US/docs/Web/API/Element/wheel_event
+
+        /// The [`Down`] event is fired at an element when a button on a pointing device (such as a
+        /// mouse or trackpad) is pressed while the pointer is inside the element.
+        ///
+        /// The [`Down`] event is the counterpoint to the [`Up`] event.
+        Down<MouseEvent>,
+
+        /// The [`Up`] event is fired at an element when a button on a pointing device (such as a mouse
+        /// or trackpad) is released while the pointer is located inside it.
+        ///
+        /// The [`Up`] event is the counterpoint to the [`Down`] event.
+        Up<MouseEvent>,
+
+        /// The [`Move`] event is fired at an element when a pointing device (such as a mouse or
+        /// trackpad) is moved while the cursor's hotspot is inside it.
+        Move<MouseEvent>,
+
+        /// The [`Enter`] event is fired at an element when the cursor of a pointing device (such as a
+        /// mouse or trackpad) is initially moved so that its hotspot is within the element at which the
+        /// event was fired.
+        ///
+        /// Both [`Enter`] and [`Over`] events are similar but differ in that [`Enter`] does not bubble
+        /// and [`Over`] does. This means that [`Enter`] is fired when the pointer has entered the
+        /// element and all of its descendants, whereas [`Over`] is fired when the pointer enters the
+        /// element or enters one of the element's descendants (even if the pointer was already within
+        /// the element).
+        Enter<MouseEvent>,
+
+        /// The [`Leave`] event is fired at an element when the cursor of a pointing device (such as a
+        /// mouse or trackpad) is moved out of it.
+        ///
+        /// Both [`Leave`] and [`Out`] events are similar but differ in that [`Leave`] does not bubble
+        /// and [`Out`] does. This means that [`Leave`] is fired when the pointer has exited the element
+        /// and all of its descendants, whereas [`Out`] is fired when the pointer leaves the element or
+        /// leaves one of the element's descendants (even if the pointer is still within the element).
+        Leave<MouseEvent>,
+
+        /// The [`Over`] event is fired at an element when the cursor of a pointing device (such as a
+        /// mouse or trackpad) is moved onto the element or one of its child elements
+        ///
+        /// Both [`Enter`] and [`Over`] events are similar but differ in that [`Enter`] does not bubble
+        /// and [`Over`] does. This means that [`Enter`] is fired when the pointer has entered the
+        /// element and all of its descendants, whereas [`Over`] is fired when the pointer enters the
+        /// element or enters one of the element's descendants (even if the pointer was already within
+        /// the element).
+        Over<MouseEvent>,
+
+        /// The [`Out`] event is fired at an element when the cursor of a pointing device (such as a
+        /// mouse or trackpad) is moved so that it is no longer contained within the element or one of
+        /// its children.
+        ///
+        /// Both [`Leave`] and [`Out`] events are similar but differ in that [`Leave`] does not bubble
+        /// and [`Out`] does. This means that [`Leave`] is fired when the pointer has exited the element
+        /// and all of its descendants, whereas [`Out`] is fired when the pointer leaves the element or
+        /// leaves one of the element's descendants (even if the pointer is still within the element).
+        Out<MouseEvent>,
+
+        /// The wheel event fires when the user rotates a wheel button on a pointing device
+        /// (typically a mouse).
+        Wheel<WheelEvent>,
+
+
+
+        // ==========================
+        // === Non JS-like Events ===
+        // ==========================
+        // These events do not have their JavaScript counterpart and are EnsoGL-specific extensions to
+        // the mouse event family
+
+        /// The [`Release`] event is fired at an element when a button on a pointing device (such as a
+        /// mouse or trackpad) is released anywhere in the scene, if it was previously pressed on that
+        /// element.
+        ///
+        /// The [`Release`] event is similar to the [`Up`] event, but fires even if the mouse is outside
+        /// of the element it was initially pressed on.
+        Release<MouseEvent>,
     }
-}
 
-impl From<JsValue> for Down {
-    fn from(js_val: JsValue) -> Self {
-        let js_event = js_val.unchecked_into::<web::MouseEvent>();
-        Self::new(js_event)
+    impl Wheel {
+        /// The horizontal scroll amount.
+        pub fn delta_x(&self) -> f64 {
+            self.js_event.delta_x()
+        }
+
+        /// The vertical scroll amount.
+        pub fn delta_y(&self) -> f64 {
+            self.js_event.delta_y()
+        }
     }
-}
 
+    impl<Type, JsEvent> From<JsValue> for Event<Type, JsEvent>
+    where JsEvent: dom::Cast
+    {
+        fn from(js_val: JsValue) -> Self {
+            let js_event = js_val.unchecked_into::<JsEvent>();
+            Self::new(js_event)
+        }
+    }
 
-impl<Type> Default for Event<Type, web::MouseEvent> {
-    fn default() -> Self {
-        Self::new(web::MouseEvent::new("default".into()).unwrap())
+    impl<Type> Default for Event<Type, web::MouseEvent> {
+        fn default() -> Self {
+            Self::new(web::MouseEvent::new("default".into()).unwrap())
+        }
+    }
+
+    impl<Type> Default for Event<Type, web::WheelEvent> {
+        fn default() -> Self {
+            Self::new(web::WheelEvent::new("default".into()).unwrap())
+        }
     }
 }

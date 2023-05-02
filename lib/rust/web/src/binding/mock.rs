@@ -626,6 +626,7 @@ mock_data! { MouseEvent => Event
 
 // === WheelEvent ===
 mock_data! { WheelEvent => MouseEvent
+    fn new(type_arg: &str) -> Result<WheelEvent, JsValue>;
     fn delta_x(&self) -> f64;
     fn delta_y(&self) -> f64;
 }

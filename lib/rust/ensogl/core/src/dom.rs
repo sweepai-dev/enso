@@ -532,7 +532,7 @@ impl Drop for EventTarget {
 
 impl EventTarget {
     pub fn on_event<E: frp::Data>(&self) -> frp::Sampler<E>
-    where E: From<untracked::JsValue> {
+    where E: From<untracked::JsValue> + event::Named {
         let network = frp::Network::new("event_listener");
         frp::extend! { network
             src <- source::<E>();
@@ -546,7 +546,7 @@ impl EventTarget {
             },
         );
         let callback_js = callback.as_ref().unchecked_ref();
-        self.untracked_repr().add_event_listener_with_callback("mousedown", callback_js).unwrap();
+        self.untracked_repr().add_event_listener_with_callback(E::name(), callback_js).unwrap();
 
         let listener = Listener { network, callback, event: Box::new(event.clone()) };
         LISTENERS.with(|listeners| {

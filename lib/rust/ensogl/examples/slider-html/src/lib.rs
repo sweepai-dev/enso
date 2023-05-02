@@ -347,7 +347,7 @@ fn init(app: &Application) {
 
     let frp = glob::Frp::new();
     let network = frp.network();
-    let on_down = div1.on_event::<dom::event::Down>();
+    let on_down = div1.on_event::<dom::event::mouse::Up>();
     let width_target = Rc::new(Cell::new(100.0));
     let width = Animation::<f32>::new_with_init(network, width_target.get());
     frp::extend! { network
