@@ -32,30 +32,30 @@ impl<T, S: From<T>> UncheckedFrom<T> for S {
 
 
 
-pub trait HasJsRepr {
-    type JsRepr;
-    fn js_repr(&self) -> &Self::JsRepr
-    where Self: AsRef<Self::JsRepr> {
+pub trait HasUntrackedRepr {
+    type UntrackedRepr;
+    fn untracked_repr(&self) -> &Self::UntrackedRepr
+    where Self: AsRef<Self::UntrackedRepr> {
         self.as_ref()
     }
 }
 
-pub type JsRepr<T> = <T as HasJsRepr>::JsRepr;
+pub type UntrackedRepr<T> = <T as HasUntrackedRepr>::UntrackedRepr;
 
 
 
 // type JsValue = web::JsValue;
 
-pub trait Wrapper {
+pub trait Initializer {
     fn init(&self);
 }
 
-impl<T: web::JsCast> Wrapper for T {
+impl<T: web::JsCast> Initializer for T {
     fn init(&self) {}
 }
 
 pub trait Cast
-where Self: Wrapper + AsRef<web::JsValue> + Into<web::JsValue> {
+where Self: Initializer + AsRef<web::JsValue> + Into<web::JsValue> {
     // Required methods
 
     fn instanceof(val: &web::JsValue) -> bool;
@@ -105,7 +105,7 @@ mod cast_helper {
     use super::*;
 
     pub trait CastHelper<T>
-    where Self: Wrapper + AsRef<web::JsValue> + Into<web::JsValue> {
+    where Self: Initializer + AsRef<web::JsValue> + Into<web::JsValue> {
         fn has_type(&self) -> bool;
         fn dyn_into(self) -> Result<T, Self>;
         fn dyn_ref(&self) -> Option<&T>;
@@ -178,7 +178,7 @@ mod cast_helper {
 }
 
 impl<S: web::JsCast> Cast for S
-where S: Wrapper + AsRef<web::JsValue> + Into<web::JsValue>
+where S: Initializer + AsRef<web::JsValue> + Into<web::JsValue>
 {
     fn instanceof(val: &web::JsValue) -> bool {
         <S as web::JsCast>::instanceof(val)
@@ -225,6 +225,10 @@ macro_rules! wrapper_struct {
             #[derive(Debug, Deref,)]
             pub struct $name {
                 [<$base:snake>]: $base,
+            }
+
+            impl HasUntrackedRepr for $name {
+                type UntrackedRepr = web::$name;
             }
 
             impl Cast for $name {
@@ -352,7 +356,7 @@ impl Drop for JsValue {
     }
 }
 
-impl Wrapper for JsValue {
+impl Initializer for JsValue {
     fn init(&self) {
         inc_value_ref_count(self.value_id());
     }
@@ -399,14 +403,10 @@ wrapper! {
     Object [JsValue]
 }
 
-impl Wrapper for Object {
+impl Initializer for Object {
     fn init(&self) {
         (**self).init()
     }
-}
-
-impl HasJsRepr for Object {
-    type JsRepr = web::Object;
 }
 
 
@@ -442,16 +442,11 @@ impl Drop for EventTarget {
     }
 }
 
-impl Wrapper for EventTarget {
+impl Initializer for EventTarget {
     fn init(&self) {
         (**self).init();
     }
 }
-
-impl HasJsRepr for EventTarget {
-    type JsRepr = web::EventTarget;
-}
-
 
 impl EventTarget {
     pub fn on_event<E: frp::Data>(&self) -> frp::Sampler<E>
@@ -467,7 +462,7 @@ impl EventTarget {
             src.emit(E::from(js_val));
         });
         let callback_js = callback.as_ref().unchecked_ref();
-        self.js_repr().add_event_listener_with_callback("mousedown", callback_js).unwrap();
+        self.untracked_repr().add_event_listener_with_callback("mousedown", callback_js).unwrap();
 
         let listener = Listener { network, callback, event: Box::new(event.clone()) };
         LISTENERS.with(|listeners| {
@@ -500,29 +495,23 @@ impl Drop for Node {
     }
 }
 
-impl Wrapper for Node {
+impl Initializer for Node {
     fn init(&self) {
         (**self).init();
     }
 }
 
-impl HasJsRepr for Node {
-    type JsRepr = web::Node;
-}
-
-
-
 impl Node {
     pub fn append_child(&self, child: &Node) {
-        self.js_repr().append_child(child.js_repr()).unwrap();
+        self.untracked_repr().append_child(child.untracked_repr()).unwrap();
     }
 
     pub fn remove_child(&self, child: &Node) -> bool {
-        self.js_repr().remove_child(child.js_repr()).is_ok()
+        self.untracked_repr().remove_child(child.untracked_repr()).is_ok()
     }
 
     pub fn parent(&self) -> Option<Node> {
-        self.js_repr().parent_node().map(|parent| parent.unchecked_into())
+        self.untracked_repr().parent_node().map(|parent| parent.unchecked_into())
     }
 
     pub fn remove_from_parent(&self) -> bool {
@@ -540,16 +529,11 @@ wrapper! {
     Element [Node, EventTarget, Object, JsValue]
 }
 
-impl Wrapper for Element {
+impl Initializer for Element {
     fn init(&self) {
         (**self).init();
     }
 }
-
-impl HasJsRepr for Element {
-    type JsRepr = web::Element;
-}
-
 
 
 // ===================
@@ -561,39 +545,35 @@ wrapper! {
     HtmlElement [Element, Node, EventTarget, Object, JsValue]
 }
 
-impl Wrapper for HtmlElement {
+impl Initializer for HtmlElement {
     fn init(&self) {
         (**self).init();
     }
 }
 
-impl HasJsRepr for HtmlElement {
-    type JsRepr = web::HtmlElement;
-}
-
 impl HtmlElement {
     pub fn set_width(&self, width: f64) -> &Self {
-        self.js_repr().set_style_or_warn("width", &format!("{}px", width));
+        self.untracked_repr().set_style_or_warn("width", &format!("{}px", width));
         self
     }
 
     pub fn set_height(&self, width: f64) -> &Self {
-        self.js_repr().set_style_or_warn("height", &format!("{}px", width));
+        self.untracked_repr().set_style_or_warn("height", &format!("{}px", width));
         self
     }
 
     pub fn set_background(&self, background: &str) -> &Self {
-        self.js_repr().set_style_or_warn("background", background);
+        self.untracked_repr().set_style_or_warn("background", background);
         self
     }
 
     pub fn set_display(&self, display: &str) -> &Self {
-        self.js_repr().set_style_or_warn("display", display);
+        self.untracked_repr().set_style_or_warn("display", display);
         self
     }
 
     pub fn set_border_radius(&self, radius: f64) -> &Self {
-        self.js_repr().set_style_or_warn("border-radius", &format!("{}px", radius));
+        self.untracked_repr().set_style_or_warn("border-radius", &format!("{}px", radius));
         self
     }
 }
@@ -612,14 +592,10 @@ wrapper! {
     HtmlDivElement [HtmlElement, Element, Node, EventTarget, Object, JsValue]
 }
 
-impl Wrapper for HtmlDivElement {
+impl Initializer for HtmlDivElement {
     fn init(&self) {
         (**self).init();
     }
-}
-
-impl HasJsRepr for HtmlDivElement {
-    type JsRepr = web::HtmlDivElement;
 }
 
 impl Default for HtmlDivElement {
