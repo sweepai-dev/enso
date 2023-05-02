@@ -266,6 +266,12 @@ macro_rules! wrapper_conversions {
 
 macro_rules! wrapper_web_conversions {
     ($name:ident [$($base:ident),*]) => {
+        impl From<web::$name> for $name {
+            fn from(t: web::$name) -> Self {
+                t.unchecked_into()
+            }
+        }
+
         paste! {
             $(
                 impl From<$name> for web::$base {
@@ -384,12 +390,6 @@ impl JsValue {
     }
 }
 
-impl From<web::Object> for JsValue {
-    fn from(t: web::Object) -> Self {
-        Self { untracked_js_value: t.into() }
-    }
-}
-
 // ==============
 // === Object ===
 // ==============
@@ -409,41 +409,6 @@ impl HasJsRepr for Object {
     type JsRepr = web::Object;
 }
 
-impl From<web::Object> for Object {
-    fn from(t: web::Object) -> Self {
-        Self { js_value: t.into() }
-    }
-}
-
-impl UncheckedFrom<web::EventTarget> for Object {
-    fn unchecked_from(t: web::EventTarget) -> Self {
-        Self::from(web::JsCast::unchecked_into::<web::Object>(t))
-    }
-}
-
-impl UncheckedFrom<web::Node> for Object {
-    fn unchecked_from(t: web::Node) -> Self {
-        Self::from(web::JsCast::unchecked_into::<web::Object>(t))
-    }
-}
-
-impl UncheckedFrom<web::Element> for Object {
-    fn unchecked_from(t: web::Element) -> Self {
-        Self::from(web::JsCast::unchecked_into::<web::Object>(t))
-    }
-}
-
-impl UncheckedFrom<web::HtmlElement> for Object {
-    fn unchecked_from(t: web::HtmlElement) -> Self {
-        Self::from(web::JsCast::unchecked_into::<web::Object>(t))
-    }
-}
-
-impl UncheckedFrom<web::HtmlDivElement> for Object {
-    fn unchecked_from(t: web::HtmlDivElement) -> Self {
-        Self::from(web::JsCast::unchecked_into::<web::Object>(t))
-    }
-}
 
 
 // ===================
@@ -514,22 +479,6 @@ impl EventTarget {
     }
 }
 
-impl UncheckedFrom<web::EventTarget> for EventTarget {
-    fn unchecked_from(t: web::EventTarget) -> Self {
-        t.unchecked_into()
-        // let object = Object::unchecked_from(t);
-        // let event_target_id = next_event_target_id();
-        // let listeners = default();
-        // let model = EventTargetModel { object, event_target_id, listeners };
-        // Self { object: Rc::new(model) }
-    }
-}
-
-impl UncheckedFrom<web::HtmlDivElement> for EventTarget {
-    fn unchecked_from(t: web::HtmlDivElement) -> Self {
-        Self::unchecked_from(web::EventTarget::from(t))
-    }
-}
 
 
 // =============
@@ -581,17 +530,6 @@ impl Node {
     }
 }
 
-impl UncheckedFrom<web::HtmlDivElement> for Node {
-    fn unchecked_from(t: web::HtmlDivElement) -> Self {
-        t.unchecked_into()
-        // let event_target = EventTarget::unchecked_from(t);
-        // let parent = default();
-        // let children = default();
-        // Self { model: Rc::new(NodeModel { event_target, parent, children }) }
-    }
-}
-
-
 
 // ===============
 // === Element ===
@@ -612,11 +550,6 @@ impl HasJsRepr for Element {
     type JsRepr = web::Element;
 }
 
-impl UncheckedFrom<web::HtmlDivElement> for Element {
-    fn unchecked_from(t: web::HtmlDivElement) -> Self {
-        Self { node: Node::unchecked_from(t) }
-    }
-}
 
 
 // ===================
@@ -665,11 +598,7 @@ impl HtmlElement {
     }
 }
 
-impl UncheckedFrom<web::HtmlDivElement> for HtmlElement {
-    fn unchecked_from(t: web::HtmlDivElement) -> Self {
-        Self { element: Element::unchecked_from(t) }
-    }
-}
+
 
 // ======================
 // === HtmlDivElement ===
@@ -707,10 +636,4 @@ impl HtmlDivElement {
 
 impl HtmlDivElement {
     fn init(&self) {}
-}
-
-impl From<web::HtmlDivElement> for HtmlDivElement {
-    fn from(t: web::HtmlDivElement) -> Self {
-        Self { html_element: HtmlElement::unchecked_from(t) }
-    }
 }
