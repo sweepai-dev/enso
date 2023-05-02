@@ -207,7 +207,7 @@ use web::UntrackedJsValue;
 macro_rules! wrapper {
     ($(#$meta:tt)* $name:ident [$base:ident $(, $bases:ident)*]) => {
         wrapper_no_web_conversions! { $(#$meta)* $name [$base $(,$bases)*] }
-        wrapper_web_conversions! { $name [$base $(,$bases)*] }
+        wrapper_web_conversions! { $name [$name, $base $(,$bases)*] }
     }
 }
 
@@ -409,13 +409,6 @@ impl HasJsRepr for Object {
     type JsRepr = web::Object;
 }
 
-
-impl From<Object> for web::Object {
-    fn from(t: Object) -> Self {
-        t.js_value.untracked_js_value.clone().unchecked_into()
-    }
-}
-
 impl From<web::Object> for Object {
     fn from(t: web::Object) -> Self {
         Self { js_value: t.into() }
@@ -538,11 +531,6 @@ impl UncheckedFrom<web::HtmlDivElement> for EventTarget {
     }
 }
 
-impl AsRef<web::EventTarget> for EventTarget {
-    fn as_ref(&self) -> &web::EventTarget {
-        self.unchecked_ref()
-    }
-}
 
 // =============
 // === Node ====
@@ -593,14 +581,6 @@ impl Node {
     }
 }
 
-
-impl AsRef<web::Node> for Node {
-    fn as_ref(&self) -> &web::Node {
-        self.event_target.unchecked_ref()
-    }
-}
-
-
 impl UncheckedFrom<web::HtmlDivElement> for Node {
     fn unchecked_from(t: web::HtmlDivElement) -> Self {
         t.unchecked_into()
@@ -631,18 +611,6 @@ impl Wrapper for Element {
 impl HasJsRepr for Element {
     type JsRepr = web::Element;
 }
-
-impl AsRef<web::Element> for Element {
-    fn as_ref(&self) -> &web::Element {
-        self.unchecked_ref()
-    }
-}
-
-// impl From<web::JsValue> for Element {
-//     fn from(js_value: web::JsValue) -> Self {
-//         Self { node: js_value.into() }
-//     }
-// }
 
 impl UncheckedFrom<web::HtmlDivElement> for Element {
     fn unchecked_from(t: web::HtmlDivElement) -> Self {
@@ -697,18 +665,6 @@ impl HtmlElement {
     }
 }
 
-impl AsRef<web::HtmlElement> for HtmlElement {
-    fn as_ref(&self) -> &web::HtmlElement {
-        self.unchecked_ref()
-    }
-}
-
-// impl From<web::JsValue> for HtmlElement {
-//     fn from(js_value: web::JsValue) -> Self {
-//         Self { element: js_value.into() }
-//     }
-// }
-
 impl UncheckedFrom<web::HtmlDivElement> for HtmlElement {
     fn unchecked_from(t: web::HtmlDivElement) -> Self {
         Self { element: Element::unchecked_from(t) }
@@ -735,12 +691,6 @@ impl Wrapper for HtmlDivElement {
 
 impl HasJsRepr for HtmlDivElement {
     type JsRepr = web::HtmlDivElement;
-}
-
-impl AsRef<web::HtmlDivElement> for HtmlDivElement {
-    fn as_ref(&self) -> &web::HtmlDivElement {
-        self.unchecked_ref()
-    }
 }
 
 impl Default for HtmlDivElement {
