@@ -118,7 +118,7 @@ pub struct Model {
     /// Background element
     pub background:            dom::Div,
     /// Slider track element that fills the slider proportional to the slider value.
-    pub track:                 track::View,
+    pub track:                 dom::Div,
     /// Indicator for overflow when the value is below the lower limit.
     pub overflow_lower:        overflow::View,
     /// Indicator for overflow when the value is above the upper limit.
@@ -159,14 +159,17 @@ impl Model {
         let start_value_animation = Animation::new_non_init(frp_network);
         let end_value_animation = Animation::new_non_init(frp_network);
         let background = dom::Div::new();
-        let track = track::View::new();
+        let track = dom::Div::new();
         let overflow_lower = overflow::View::new();
         let overflow_upper = overflow::View::new();
         let style = StyleWatch::new(&app.display.default_scene.style_sheet);
 
+        root.set_position("relative");
+        track.set_position("absolute");
+
         root.append_child(&background);
+        root.append_child(&track);
         // FIXME: commented
-        // root.add_child(&track);
         // root.add_child(&label);
         // root.add_child(&value);
         value.add_child(&value_text_left);
@@ -204,9 +207,12 @@ impl Model {
         self.label.set_font(text::font::DEFAULT_FONT);
         // FIXME: commented
         // self.background.color.set(background_color.into());
-        self.background.set_background("red");
+        self.background.set_background("#ff000020");
 
-        self.track.color.set(track_color.into());
+        // FIXME: commented
+        // self.track.color.set(track_color.into());
+        self.track.set_background("#0000ff20");
+
         self.update_size(Vector2(COMPONENT_WIDTH_DEFAULT, COMPONENT_HEIGHT_DEFAULT));
         self.value_text_dot.set_content(".");
         self
@@ -219,16 +225,20 @@ impl Model {
         self.background.set_width(size.x as f64);
         self.background.set_height(size.y as f64);
 
-        self.track.set_size(size);
+        // FIXME: commented
+        // self.track.set_size(size);
+        self.track.set_height(size.y as f64);
+
         // FIXME: commented
         // self.background.set_x(size.x / 2.0);
-        self.track.set_x(size.x / 2.0);
+        // self.track.set_x(size.x / 2.0);
         self.value.set_x(size.x / 2.0);
     }
 
     /// Set the color of the slider track or thumb.
     pub fn set_indicator_color(&self, color: &color::Lcha) {
-        self.track.color.set(color::Rgba::from(color).into());
+        // FIXME: commented
+        // self.track.color.set(color::Rgba::from(color).into());
     }
 
     /// Set the color of the slider background.
@@ -238,16 +248,19 @@ impl Model {
     }
 
     /// Set the position of the value indicator.
-    pub fn set_indicator_position(&self, start: f32, fraction: f32, orientation: Axis2) {
-        match orientation {
-            Axis2::X => {
-                self.track.start.set(start.clamp(0.0, 1.0));
-                self.track.end.set(fraction.clamp(0.0, 1.0));
-            }
-            Axis2::Y => {
-                self.track.end.set(1.0);
-            }
-        }
+    pub fn set_indicator_position(&self, start: f32, end: f32, orientation: Axis2) {
+        console_log!("set_indicator_position {} {}", start, end);
+        self.track.set_width_str(&format!("{}%", (end - start) * 100.0));
+        // FIXME: commented
+        // match orientation {
+        //     Axis2::X => {
+        //         self.track.start.set(start.clamp(0.0, 1.0));
+        //         self.track.end.set(end.clamp(0.0, 1.0));
+        //     }
+        //     Axis2::Y => {
+        //         self.track.end.set(1.0);
+        //     }
+        // }
     }
 
     /// Set the size and orientation of the overflow markers.

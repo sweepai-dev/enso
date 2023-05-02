@@ -393,7 +393,7 @@ impl Slider {
             //     f!([scene, model] (p) scene.screen_to_object_space(model.display_object(), *p))
             // );
             // FIXME: mock
-            pos <- mouse.position.map(|p| *p);
+            pos <- mouse.position_top_left.map(|p| *p);
 
             orientation_orth <- frp.orientation.map(|o| o.orthogonal());
 
@@ -429,6 +429,7 @@ impl Slider {
                 &frp.enable_middle_track_drag,
                 &frp.enable_end_track_drag,
                 |pos, length, start, end, min, max, enable_start, enable_middle, enable_end| {
+                    console_log!("pos: {}, length: {}, start: {}, end: {}, min: {}, max: {}, enable_start: {}, enable_middle: {}, enable_end: {}", pos, length, start, end, min, max, enable_start, enable_middle, enable_end);
                     match (enable_start, enable_middle, enable_end) {
                         (false, false, false) => None,
                         (true, false, false) => Some(DragHandle::Start),
@@ -463,6 +464,7 @@ impl Slider {
                     }
                 }
             );
+            trace handle;
 
             // FIXME: mock
             length.emit(100.0);

@@ -663,6 +663,16 @@ where
         self
     }
 
+    fn set_width_str(&self, width: &str) -> &Self {
+        self.as_dom().as_ref().untracked_repr().set_style_or_warn("width", width);
+        self
+    }
+
+    fn set_position(&self, position: &str) -> &Self {
+        self.as_dom().as_ref().untracked_repr().set_style_or_warn("position", position);
+        self
+    }
+
     fn set_height(&self, width: f64) -> &Self {
         self.as_dom()
             .as_ref()
@@ -729,7 +739,9 @@ impl Default for HtmlDivElement {
 
 impl HtmlDivElement {
     pub fn new() -> Self {
-        Self::from(document.create_div_or_panic())
+        let div = Self::from(document.create_div_or_panic());
+        div.set_display("flex");
+        div
     }
 }
 
