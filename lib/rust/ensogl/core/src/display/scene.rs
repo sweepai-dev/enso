@@ -20,6 +20,7 @@ use crate::display::style;
 use crate::display::style::data::DataMatch;
 use crate::display::symbol::Symbol;
 use crate::display::world;
+use crate::dom as new_dom;
 use crate::system;
 use crate::system::gpu::data::uniform::Uniform;
 use crate::system::gpu::data::uniform::UniformScope;
@@ -817,6 +818,7 @@ pub struct SceneData {
     pub frp: Frp,
     pub pointer_position_changed: Rc<Cell<bool>>,
     pub shader_compiler: shader::compiler::Controller,
+    pub new_dom_root: new_dom::Div,
     initial_shader_compilation: Rc<Cell<TaskState>>,
     display_mode: Rc<Cell<glsl::codes::DisplayModes>>,
     extensions: Extensions,
@@ -869,6 +871,9 @@ impl SceneData {
         let pointer_position_changed = default();
         let shader_compiler = default();
         let initial_shader_compilation = default();
+        let new_dom_root = new_dom::Cast::unchecked_into::<new_dom::HtmlDivElement>(
+            new_dom::document.get_element_by_id("html-root").unwrap(),
+        );
         Self {
             display_object,
             display_mode,
@@ -894,6 +899,7 @@ impl SceneData {
             initial_shader_compilation,
             extensions,
             disable_context_menu,
+            new_dom_root,
         }
         .init()
     }
@@ -901,6 +907,10 @@ impl SceneData {
     fn init(self) -> Self {
         self.init_pointer_position_changed_check();
         self
+    }
+
+    pub fn append_child(&self, child: &new_dom::Node) {
+        self.new_dom_root.append_child(child);
     }
 
     /// Set the GPU context. In most cases, this happens during app initialization or during context

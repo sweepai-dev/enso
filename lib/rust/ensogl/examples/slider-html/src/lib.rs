@@ -32,6 +32,7 @@ use ensogl_core::data::color;
 use ensogl_core::display;
 use ensogl_core::display::navigation::navigator::Navigator;
 use ensogl_core::dom;
+use ensogl_core::dom::traits::*;
 use ensogl_core::system::web;
 use ensogl_core::system::web::traits::*;
 use ensogl_core::Animation;
@@ -336,31 +337,13 @@ fn init(app: &Application) {
 
     let world = app.display.clone();
     let scene = &world.default_scene;
-    let dom_front_layer = &scene.dom.layers.front;
-
-    console_log!("\n\n>> root");
-    let root = dom::Div::from(
-        web::document
-            .get_element_by_id("html-root")
-            .unwrap()
-            .unchecked_into::<web::HtmlDivElement>(),
-    );
-
-    console_log!("\n\n>> root2");
-    let root2 = dom::Div::from(
-        web::document
-            .get_element_by_id("html-root")
-            .unwrap()
-            .unchecked_into::<web::HtmlDivElement>(),
-    );
 
     let div1 = dom::Div::new();
     div1.set_width(100.0).set_height(100.0).set_background("red").set_border_radius(10.0);
     let div2 = dom::Div::new();
     div2.set_width(100.0).set_height(100.0).set_background("green").set_border_radius(10.0);
-    root.append_child(&div1);
-    root.append_child(&div2);
-
+    scene.append_child(&div1);
+    scene.append_child(&div2);
 
     let frp = glob::Frp::new();
     let network = frp.network();
@@ -376,7 +359,6 @@ fn init(app: &Application) {
         eval width.value ((w) {div1.set_width(*w as f64);});
     }
 
-    mem::forget(root);
     mem::forget(div2.clone());
     mem::forget(frp);
 }

@@ -4,6 +4,7 @@ use crate::display::world;
 use crate::system::web::dom::Shape;
 use crate::system::web::traits_no_js_cast::*;
 
+use enso_frp::web;
 use enso_web::binding::mock::MockData;
 use enso_web::binding::mock::MockDefault;
 use enso_web::Reflect;
@@ -19,6 +20,9 @@ use untracked::UntrackedJsValue;
 
 pub use crate::system::web::document;
 
+pub mod traits {
+    pub use super::Cast as TRAIT_Cast;
+}
 
 pub trait UncheckedFrom<T> {
     fn unchecked_from(t: T) -> Self;
@@ -40,10 +44,9 @@ impl<T, S: From<T>> UncheckedFrom<T> for S {
 
 
 
-pub trait HasUntrackedRepr {
+pub trait HasUntrackedRepr: AsRef<Self::UntrackedRepr> {
     type UntrackedRepr;
-    fn untracked_repr(&self) -> &Self::UntrackedRepr
-    where Self: AsRef<Self::UntrackedRepr> {
+    fn untracked_repr(&self) -> &Self::UntrackedRepr {
         self.as_ref()
     }
 }
@@ -246,6 +249,10 @@ macro_rules! wrapper_struct {
             }
 
             impl HasUntrackedRepr for $name {
+                type UntrackedRepr = untracked::$name;
+            }
+
+            impl HasUntrackedRepr for &$name {
                 type UntrackedRepr = untracked::$name;
             }
 
