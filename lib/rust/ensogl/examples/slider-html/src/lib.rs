@@ -347,9 +347,15 @@ fn init(app: &Application) {
     let scene = &world.default_scene;
 
     let div1 = dom::Div::new();
-    div1.set_width(100.0).set_height(100.0).set_background("red").set_border_radius(10.0);
+    div1.set_width(100.0)
+        .set_height(100.0)
+        .set_background(color::Rgba::red())
+        .set_border_radius(10.0);
     let div2 = dom::Div::new();
-    div2.set_width(100.0).set_height(100.0).set_background("green").set_border_radius(10.0);
+    div2.set_width(100.0)
+        .set_height(100.0)
+        .set_background(color::Rgba::green())
+        .set_border_radius(10.0);
     scene.append_child(&div1);
     scene.append_child(&div2);
 

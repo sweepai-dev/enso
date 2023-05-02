@@ -35,62 +35,12 @@ const OVERFLOW_MARKER_SIZE: f32 = 0.75;
 // === Slider background and track shape definitions ===
 // =====================================================
 
-struct Background {
-    pub width:  Var<Pixels>,
-    pub height: Var<Pixels>,
-    pub shape:  AnyShape,
-}
-
-impl Background {
-    /// Create new rounded rectangle to serve as the component's background.
-    fn new() -> Self {
-        let width: Var<Pixels> = "input_size.x".into();
-        let height: Var<Pixels> = "input_size.y".into();
-        let shape = Rect((&width, &height)).corners_radius(&height / 2.0);
-        let shape = shape.into();
-        Background { width, height, shape }
-    }
-}
-
-/// Background shape.
-mod background {
-    use super::*;
-
-    ensogl_core::shape! {
-        alignment = center;
-        (style:Style, color:Vector4) {
-            let shape = Background::new().shape;
-            let shape = shape.fill(color);
-            shape.into()
-        }
-    }
-}
-
-/// Track shape that fills the slider proportional to the slider value.
-mod track {
-    use super::*;
-    ensogl_core::shape! {
-        above = [background];
-        pointer_events = false;
-        alignment = center;
-        (style:Style, start: f32, end:f32, color:Vector4) {
-            let Background{width,height,shape: background} = Background::new();
-            let length = &end - &start;
-            let track = Rect((&width * &length, &height));
-            let track = track.translate_x(&width * (length - 1.0) * 0.5 + &width * start);
-            let track = track.intersection(background).fill(color);
-            track.into()
-        }
-    }
-}
-
-
 /// Triangle shape used as an overflow indicator on either side of the range.
 mod overflow {
     use super::*;
 
     ensogl_core::shape! {
-        above = [background, track];
+        // above = [background, track];
         pointer_events = false;
         alignment = center;
         (style:Style, color:Vector4) {
@@ -115,8 +65,6 @@ mod overflow {
 /// The slider model contains the visual elements of the slider component.
 #[derive(Debug)]
 pub struct Model {
-    /// Background element
-    pub background:            dom::Div,
     /// Slider track element that fills the slider proportional to the slider value.
     pub track:                 dom::Div,
     /// Indicator for overflow when the value is below the lower limit.
@@ -158,18 +106,16 @@ impl Model {
         let tooltip = Tooltip::new(app);
         let start_value_animation = Animation::new_non_init(frp_network);
         let end_value_animation = Animation::new_non_init(frp_network);
-        let background = dom::Div::new();
         let track = dom::Div::new();
         let overflow_lower = overflow::View::new();
         let overflow_upper = overflow::View::new();
         let style = StyleWatch::new(&app.display.default_scene.style_sheet);
 
         root.set_position_relative();
-        track.set_position_absolute();
-        background.set_height(100.pc());
+        root.set_border_radius(i32::MAX);
+        root.set_overflow_clip();
         track.set_height(100.pc());
 
-        root.append_child(&background);
         root.append_child(&track);
         // FIXME: commented
         // root.add_child(&label);
@@ -180,7 +126,6 @@ impl Model {
         app.display.default_scene.add_child(&tooltip);
 
         let model = Self {
-            background,
             track,
             overflow_lower,
             overflow_upper,
@@ -207,13 +152,8 @@ impl Model {
         self.value_text_right.set_font(text::font::DEFAULT_FONT);
         self.value_text_edit.set_font(text::font::DEFAULT_FONT);
         self.label.set_font(text::font::DEFAULT_FONT);
-        // FIXME: commented
-        // self.background.color.set(background_color.into());
-        self.background.set_background("#ff000020");
-
-        // FIXME: commented
-        // self.track.color.set(track_color.into());
-        self.track.set_background("#0000ff20");
+        self.root.set_background(background_color);
+        self.track.set_background(track_color);
 
         self.update_size(Vector2(COMPONENT_WIDTH_DEFAULT, COMPONENT_HEIGHT_DEFAULT));
         self.value_text_dot.set_content(".");
@@ -224,7 +164,7 @@ impl Model {
     pub fn update_size(&self, size: Vector2<f32>) {
         // FIXME: commented
         // self.background.set_size(size);
-        self.background.set_width(size.x as f64);
+        // self.background.set_width(size.x as f64);
 
         // FIXME: commented
         // self.track.set_size(size);
@@ -249,18 +189,10 @@ impl Model {
 
     /// Set the position of the value indicator.
     pub fn set_indicator_position(&self, start: f32, end: f32, orientation: Axis2) {
-        console_log!("set_indicator_position {} {}", start, end);
+        let start = start.clamp(0.0, 1.0);
+        let end = end.clamp(0.0, 1.0);
         self.track.set_width(((end - start) * 100.0).pc());
-        // FIXME: commented
-        // match orientation {
-        //     Axis2::X => {
-        //         self.track.start.set(start.clamp(0.0, 1.0));
-        //         self.track.end.set(end.clamp(0.0, 1.0));
-        //     }
-        //     Axis2::Y => {
-        //         self.track.end.set(1.0);
-        //     }
-        // }
+        self.track.set_margin_left((start * 100.0).pc());
     }
 
     /// Set the size and orientation of the overflow markers.

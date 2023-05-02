@@ -4,6 +4,7 @@ use crate::display::world;
 use crate::system::web::dom::Shape;
 use crate::system::web::traits_no_js_cast::*;
 
+use crate::data::color;
 use enso_frp::web;
 use enso_web::binding::mock::MockData;
 use enso_web::binding::mock::MockDefault;
@@ -30,6 +31,15 @@ pub mod traits {
 
 pub trait HasCssRepr {
     fn to_css(&self) -> String;
+}
+
+impl HasCssRepr for color::Rgba {
+    fn to_css(&self) -> String {
+        let red = (self.red * 255.0).round() as u8;
+        let green = (self.green * 255.0).round() as u8;
+        let blue = (self.blue * 255.0).round() as u8;
+        format!("rgba({}, {}, {}, {})", red, green, blue, self.alpha)
+    }
 }
 
 // ============
@@ -760,7 +770,28 @@ macro_rules! with_position_decl {
         }
     };
 }
+
+macro_rules! with_overlfow_decl {
+    ($f:ident) => {
+        $f! {
+            Overflow {
+                Auto,
+                Hidden,
+                Inherit,
+                Initial,
+                Overlay,
+                Revert,
+                Clip,
+                Scroll,
+                Unset,
+                Visible,
+            }
+        }
+    };
+}
+
 with_position_decl!(define_enum_attr);
+with_overlfow_decl!(define_enum_attr);
 
 pub trait Wrapper {
     type Target;
@@ -781,6 +812,7 @@ where
     Self: Wrapper,
     <Self as Wrapper>::Target: AsRef<HtmlElement>, {
     with_position_decl!(define_enum_setters);
+    with_overlfow_decl!(define_enum_setters);
 
     fn set_width(&self, t: impl Into<Size>) -> &Self {
         self.as_dom().as_ref().untracked_repr().set_style_or_warn("width", t.into().to_css());
@@ -792,47 +824,34 @@ where
         self
     }
 
+    fn set_margin_left(&self, t: impl Into<Size>) -> &Self {
+        self.as_dom().as_ref().untracked_repr().set_style_or_warn("margin-left", t.into().to_css());
+        self
+    }
+
     fn set_size(&self, t: impl IntoVectorTrans2<Size>) -> &Self {
         let vec = t.into_vector_trans();
         self.set_width(vec.x).set_height(vec.y)
     }
 
-    // fn set_position_absolute(&self) -> &Self {
-    //     self.set_position("absolute")
-    // }
-    //
-    // fn set_position_fixed(&self) -> &Self {
-    //     self.set_position("fixed")
-    // }
-    //
-    // fn set_position_relative(&self) -> &Self {
-    //     self.set_position("relative")
-    // }
-    //
-    // fn set_position_static(&self) -> &Self {
-    //     self.set_position("static")
-    // }
-    //
-    // fn set_position_sticky(&self) -> &Self {
-    //     self.set_position("sticky")
-    // }
+    fn set_border_radius(&self, t: impl Into<Size>) -> &Self {
+        self.as_dom()
+            .as_ref()
+            .untracked_repr()
+            .set_style_or_warn("border-radius", t.into().to_css());
+        self
+    }
 
-
-    fn set_background(&self, background: &str) -> &Self {
-        self.as_dom().as_ref().untracked_repr().set_style_or_warn("background", background);
+    fn set_background(&self, color: impl Into<color::Rgba>) -> &Self {
+        self.as_dom()
+            .as_ref()
+            .untracked_repr()
+            .set_style_or_warn("background", color.into().to_css());
         self
     }
 
     fn set_display(&self, display: &str) -> &Self {
         self.as_dom().as_ref().untracked_repr().set_style_or_warn("display", display);
-        self
-    }
-
-    fn set_border_radius(&self, radius: f64) -> &Self {
-        self.as_dom()
-            .as_ref()
-            .untracked_repr()
-            .set_style_or_warn("border-radius", &format!("{}px", radius));
         self
     }
 }

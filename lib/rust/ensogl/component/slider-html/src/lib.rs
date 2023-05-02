@@ -379,7 +379,7 @@ impl Slider {
         let mouse = &scene.mouse.frp_deprecated;
         let keyboard = &scene.keyboard.frp;
 
-        let ptr_down_any = model.background.on_event::<dom::event::mouse::Down>();
+        let ptr_down_any = model.root.on_event::<dom::event::mouse::Down>();
         let ptr_up_any = scene.on_event::<mouse::Up>();
         // FIXME: commented
         // let obj = model.display_object();
