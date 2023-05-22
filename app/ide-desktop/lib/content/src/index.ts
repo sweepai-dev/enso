@@ -251,6 +251,7 @@ class Main implements AppRunner {
             logger,
             supportsLocalBackend: SUPPORTS_LOCAL_BACKEND,
             supportsDeepLinks: SUPPORTS_DEEP_LINKS,
+            redirectUrl: SUPPORTS_DEEP_LINKS ? null : location.href,
             showDashboard: contentConfig.OPTIONS.groups.featurePreview.options.newDashboard.value,
             onAuthenticated: () => {
                 if (isInAuthenticationFlow) {

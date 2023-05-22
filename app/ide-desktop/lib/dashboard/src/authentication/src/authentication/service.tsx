@@ -95,6 +95,8 @@ export interface AuthConfig {
     /** Whether the application supports deep links. This is only true when using
      * the installed app on macOS and Windows. */
     supportsDeepLinks: boolean
+    /** Override for the redirect URL for the sign up endpoint. */
+    redirectUrl: string | null
     /** Function to navigate to a given (relative) URL.
      *
      * Used to redirect to pages like the password reset page with the query parameters set in the
@@ -121,9 +123,9 @@ export interface AuthService {
  * This function should only be called once, and the returned service should be used throughout the
  * application. This is because it performs global configuration of the Amplify library. */
 export function initAuthService(authConfig: AuthConfig): AuthService {
-    const { logger, supportsDeepLinks, navigate } = authConfig
+    const { logger, supportsDeepLinks, redirectUrl, navigate } = authConfig
     const amplifyConfig = loadAmplifyConfig(logger, supportsDeepLinks, navigate)
-    const cognitoClient = new cognito.Cognito(logger, supportsDeepLinks, amplifyConfig)
+    const cognitoClient = new cognito.Cognito(logger, amplifyConfig, supportsDeepLinks, redirectUrl)
     return {
         cognito: cognitoClient,
         registerAuthEventListener: listen.registerAuthEventListener,

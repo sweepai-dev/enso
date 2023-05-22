@@ -87,6 +87,8 @@ export interface AppProps {
     /** Whether the application supports deep links. This is only true when using
      * the installed app on macOS and Windows. */
     supportsDeepLinks: boolean
+    /** Override for the redirect URL for the sign up endpoint. */
+    redirectUrl: string | null
     /** Whether the dashboard should be rendered. */
     showDashboard: boolean
     onAuthenticated: () => void

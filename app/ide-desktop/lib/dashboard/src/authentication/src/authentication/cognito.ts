@@ -144,8 +144,9 @@ export class Cognito {
     /** Create a new Cognito wrapper. */
     constructor(
         private readonly logger: loggerProvider.Logger,
+        private readonly amplifyConfig: config.AmplifyConfig,
         private readonly supportsDeepLinks: boolean,
-        private readonly amplifyConfig: config.AmplifyConfig
+        private readonly redirectUrl: string | null
     ) {
         /** Amplify expects `Auth.configure` to be called before any other `Auth` methods are
          * called. By wrapping all the `Auth` methods we care about and returning an `Cognito` API
@@ -173,7 +174,7 @@ export class Cognito {
      *
      * Does not rely on federated identity providers (e.g., Google or GitHub). */
     signUp(username: string, password: string) {
-        return signUp(this.supportsDeepLinks, username, password)
+        return signUp(this.supportsDeepLinks, this.redirectUrl, username, password)
     }
 
     /** Send the email address verification code.
@@ -339,9 +340,14 @@ function intoCurrentSessionErrorKind(error: unknown): CurrentSessionErrorKind {
 
 /** A wrapper around the Amplify "sign up" endpoint that converts known errors
  * to {@link SignUpError}s. */
-async function signUp(supportsDeepLinks: boolean, username: string, password: string) {
+async function signUp(
+    supportsDeepLinks: boolean,
+    redirectUrl: string | null,
+    username: string,
+    password: string
+) {
     const result = await results.Result.wrapAsync(async () => {
-        const params = intoSignUpParams(supportsDeepLinks, username, password)
+        const params = intoSignUpParams(supportsDeepLinks, redirectUrl, username, password)
         await amplify.Auth.signUp(params)
     })
     return result.mapErr(intoAmplifyErrorOrThrow).mapErr(intoSignUpErrorOrThrow)
@@ -350,6 +356,7 @@ async function signUp(supportsDeepLinks: boolean, username: string, password: st
 /** Format a username and password as an {@link amplify.SignUpParams}. */
 function intoSignUpParams(
     supportsDeepLinks: boolean,
+    redirectUrl: string | null,
     username: string,
     password: string
 ): amplify.SignUpParams {
@@ -369,6 +376,8 @@ function intoSignUpParams(
              * expected to appear exactly as-is in Cognito, so we must match it. */
             // eslint-disable-next-line @typescript-eslint/naming-convention
             'custom:fromDesktop': JSON.stringify(supportsDeepLinks),
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            ...(redirectUrl != null ? { 'custom:redirectUrl': redirectUrl } : {}),
         },
     }
 }
