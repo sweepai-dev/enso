@@ -260,9 +260,9 @@ public class IdExecutionInstrument extends TruffleInstrument implements IdExecut
       FunctionCallInfo cachedCall = cache.getCall(nodeId);
       ProfilingInfo[] profilingInfo = new ProfilingInfo[] {new ExecutionTime(nanoTimeElapsed)};
 
-      ExpressionValue expressionValue =
-      new ExpressionValue(
-      nodeId, result, resultType, cachedType, call, cachedCall, profilingInfo, false);
+      ExpressionValue expressionValue = new ExpressionValue(
+        nodeId, result, resultType, cachedType, call, cachedCall, profilingInfo, false
+      );
       syncState.setExpressionUnsync(nodeId);
       syncState.setVisualisationUnsync(nodeId);
 

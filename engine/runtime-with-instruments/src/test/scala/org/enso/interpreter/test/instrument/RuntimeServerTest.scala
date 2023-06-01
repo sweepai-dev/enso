@@ -805,8 +805,7 @@ class RuntimeServerTest
     )
   }
 
-  it should "send method pointer updates of partially applied constructors" in {
-    pending
+  it should "send method pointer updates of partially_applied_constructors" in {
     val contextId  = UUID.randomUUID()
     val requestId  = UUID.randomUUID()
     val moduleName = "Enso_Test.Test.Main"
@@ -826,6 +825,8 @@ class RuntimeServerTest
         |""".stripMargin.linesIterator.mkString("\n")
     val contents = metadata.appendToCode(code)
     val mainFile = context.writeMain(contents)
+    metadata.assertInCode(id_x_1, code, "T.A 1")
+    metadata.assertInCode(id_x_2, code, "x_1 2")
 
     // create context
     context.send(Api.Request(requestId, Api.CreateContextRequest(contextId)))
