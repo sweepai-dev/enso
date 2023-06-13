@@ -1,5 +1,5 @@
 /** @file The top-bar of dashboard. */
-import * as React from 'react'
+import * as react from 'react'
 
 import * as dashboard from './dashboard'
 import * as platformModule from '../../platform'
@@ -30,17 +30,17 @@ interface TopBarProps {
  */
 function TopBar(props: TopBarProps) {
     const { platform, projectName, tab, toggleTab, setBackendPlatform, query, setQuery } = props
-    const [userMenuVisible, setUserMenuVisible] = React.useState(false)
+    const [userMenuVisible, setUserMenuVisible] = react.useState(false)
     const { setModal, unsetModal } = modalProvider.useSetModal()
     const { backend } = backendProvider.useBackend()
 
-    React.useEffect(() => {
+    react.useEffect(() => {
         if (userMenuVisible) {
             setModal(() => <UserMenu />)
         } else {
             unsetModal()
         }
-    }, [userMenuVisible, setModal, unsetModal])
+    }, [userMenuVisible])
 
     return (
         <div className="flex mb-2 h-8">

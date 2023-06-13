@@ -1,6 +1,6 @@
 /** @file A context menu. */
 
-import * as React from 'react'
+import * as react from 'react'
 
 // =================
 // === Component ===
@@ -10,10 +10,10 @@ export interface ContextMenuProps {
     // `left: number` and `top: number` may be more correct,
     // however passing an event eliminates the chance
     // of passing the wrong coordinates from the event.
-    event: React.MouseEvent
+    event: react.MouseEvent
 }
 
-function ContextMenu(props: React.PropsWithChildren<ContextMenuProps>) {
+function ContextMenu(props: react.PropsWithChildren<ContextMenuProps>) {
     const { children, event } = props
     return (
         <div

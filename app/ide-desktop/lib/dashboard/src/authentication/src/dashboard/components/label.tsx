@@ -1,5 +1,5 @@
 /** @file A label, which may be either user-defined, or a system warning message. */
-import * as React from 'react'
+import * as react from 'react'
 
 import * as svg from '../../components/svg'
 
@@ -38,11 +38,11 @@ const STATUS_ICON: Record<Status, JSX.Element | null> = {
 
 export interface LabelProps {
     status?: Status
-    onContextMenu?: React.MouseEventHandler<HTMLDivElement>
+    onContextMenu?: react.MouseEventHandler<HTMLDivElement>
 }
 
 /** A label, which may be either user-defined, or a system warning message. */
-function Label(props: React.PropsWithChildren<LabelProps>) {
+function Label(props: react.PropsWithChildren<LabelProps>) {
     const { status = Status.none, children, onContextMenu } = props
     return (
         <div

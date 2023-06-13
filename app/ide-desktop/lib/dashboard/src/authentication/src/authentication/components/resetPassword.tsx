@@ -1,6 +1,6 @@
 /** @file Container responsible for rendering and interactions in second half of forgot password
  * flow. */
-import * as React from 'react'
+import * as react from 'react'
 import * as router from 'react-router-dom'
 import toast from 'react-hot-toast'
 
@@ -29,10 +29,10 @@ function ResetPassword() {
 
     const { verificationCode: initialCode, email: initialEmail } = parseUrlSearchParams(search)
 
-    const [email, setEmail] = React.useState(initialEmail ?? '')
-    const [code, setCode] = React.useState(initialCode ?? '')
-    const [newPassword, setNewPassword] = React.useState('')
-    const [newPasswordConfirm, setNewPasswordConfirm] = React.useState('')
+    const [email, setEmail] = react.useState(initialEmail ?? '')
+    const [code, setCode] = react.useState(initialCode ?? '')
+    const [newPassword, setNewPassword] = react.useState('')
+    const [newPasswordConfirm, setNewPasswordConfirm] = react.useState('')
 
     const onSubmit = () => {
         if (newPassword !== newPasswordConfirm) {

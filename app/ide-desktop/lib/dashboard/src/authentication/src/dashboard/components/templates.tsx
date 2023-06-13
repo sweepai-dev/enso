@@ -1,11 +1,9 @@
 /** @file Renders the list of templates from which a project can be created. */
-import * as React from 'react'
-
 import * as svg from '../../components/svg'
 
-// =============
-// === Types ===
-// =============
+// =================
+// === Templates ===
+// =================
 
 /** Template metadata. */
 interface Template {
@@ -14,10 +12,6 @@ interface Template {
     id: string
     background: string
 }
-
-// =================
-// === Constants ===
-// =================
 
 /** The full list of templates. */
 const TEMPLATES: Template[] = [
@@ -49,13 +43,13 @@ const TEMPLATES: Template[] = [
         title: 'Geospatial analysis',
         id: 'Restaurants',
         description: 'Learn where to open a coffee shop to maximize your income.',
-        background: 'url("/geo.png") center / cover, #6b7280',
+        background: 'url("/geo.png") center / cover',
     },
     {
         title: 'Analyze GitHub stars',
         id: 'Stargazers',
         description: "Find out which of Enso's repositories are most popular over time.",
-        background: 'url("/visualize.png") center / cover, #6b7280',
+        background: 'url("/visualize.png") center / cover',
     },
 ]
 
@@ -83,7 +77,7 @@ function TemplatesRender(props: TemplatesRenderProps) {
         >
             <div className="flex h-full w-full border-dashed-custom rounded-2xl text-primary">
                 <div className="m-auto text-center">
-                    <div className="inline-block">{svg.CIRCLED_PLUS_ICON}</div>
+                    <button>{svg.CIRCLED_PLUS_ICON}</button>
                     <p className="font-semibold text-sm">New empty project</p>
                 </div>
             </div>

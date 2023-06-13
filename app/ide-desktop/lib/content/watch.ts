@@ -29,9 +29,6 @@ async function watch() {
         ...bundler.argumentsFromEnv(),
         devMode: true,
     })
-    opts.pure.splice(opts.pure.indexOf('assert'), 1)
-    opts.define.assert =
-        '(invariant, message) => { if (!invariant) { console.error("assertion failed: " + message)} }'
     const builder = await esbuild.context(opts)
     await builder.watch()
     await builder.serve({

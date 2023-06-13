@@ -39,15 +39,17 @@ export function bundlerOptions(
         entryPoints: ['src/index.ts', 'src/preload.ts'],
         outbase: 'src',
         format: 'cjs',
-        platform: 'node',
-        // The names come from a third-party API and cannot be changed.
-        /* eslint-disable @typescript-eslint/naming-convention */
+        // Disabling naming convnetion lints below
+        // because they are third-party configuration options.
+        // eslint-disable-next-line @typescript-eslint/naming-convention
         outExtension: { '.js': '.cjs' },
+        platform: 'node',
         define: {
+            /* eslint-disable @typescript-eslint/naming-convention */
             BUNDLED_ENGINE_VERSION: JSON.stringify(bundledEngineVersion),
             PROJECT_MANAGER_IN_BUNDLE_PATH: JSON.stringify(projectManagerInBundlePath),
+            /* eslint-enable @typescript-eslint/naming-convention */
         },
-        /* eslint-enable @typescript-eslint/naming-convention */
         sourcemap: true,
         external: ['electron'],
     }

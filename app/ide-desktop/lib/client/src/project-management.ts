@@ -208,7 +208,7 @@ export function directoryWithinBundle(bundlePath: string): string | null {
         sync: true,
         onentry: entry => {
             // We normalize to get rid of leading `.` (if any).
-            const path = entry.path.normalize()
+            let path = entry.path.normalize()
             commonPrefix = commonPrefix == null ? path : utils.getCommonPrefix(commonPrefix, path)
         },
     })
@@ -238,7 +238,7 @@ export function generateDirectoryName(name: string): string {
 
     const projectsDirectory = getProjectsDirectory()
     for (; ; suffix++) {
-        const candidatePath = pathModule.join(
+        let candidatePath = pathModule.join(
             projectsDirectory,
             `${name}${suffix === 0 ? '' : `_${suffix}`}`
         )

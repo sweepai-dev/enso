@@ -28,7 +28,7 @@ import BUILD_INFO from '../../build.json' assert { type: 'json' }
  * @see `args` definition below for fields description.
  */
 export interface Arguments {
-    // The types come from a third-party API and cannot be changed.
+    // This is returned by a third-party library we do not control.
     // eslint-disable-next-line no-restricted-syntax
     target?: string | undefined
     iconsDist: string

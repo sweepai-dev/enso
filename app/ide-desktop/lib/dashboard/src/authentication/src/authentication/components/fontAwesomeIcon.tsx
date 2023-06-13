@@ -1,6 +1,4 @@
 /** @file Styled wrapper around FontAwesome icons. */
-import * as React from 'react'
-
 import * as fontawesome from '@fortawesome/react-fontawesome'
 import * as fontawesomeIcons from '@fortawesome/free-brands-svg-icons'
 

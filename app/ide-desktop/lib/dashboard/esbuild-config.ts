@@ -61,7 +61,7 @@ function esbuildPluginGenerateTailwind(): esbuild.Plugin {
                 contents: string
                 lastModified: number
             }
-            const cachedOutput: Record<string, CacheEntry> = {}
+            let cachedOutput: Record<string, CacheEntry> = {}
             let tailwindConfigLastModified = 0
             let tailwindConfigWasModified = true
             const cssProcessor = postcss([
@@ -104,12 +104,9 @@ function esbuildPluginGenerateTailwind(): esbuild.Plugin {
 /** Generate the bundler options. */
 export function bundlerOptions(args: Arguments) {
     const { outputPath } = args
-    // This is required to prevent TypeScript from narrowing `true` to `boolean`.
-    // eslint-disable-next-line no-restricted-syntax
-    const trueBoolean = true as boolean
     const buildOptions = {
         absWorkingDir: THIS_PATH,
-        bundle: trueBoolean,
+        bundle: true,
         entryPoints: [path.resolve(THIS_PATH, 'src', 'tailwind.css')],
         outdir: outputPath,
         outbase: 'src',
@@ -126,13 +123,12 @@ export function bundlerOptions(args: Arguments) {
             // eslint-disable-next-line @typescript-eslint/naming-convention
             IS_DEV_MODE: JSON.stringify(args.devMode),
         },
-        pure: ['assert'],
-        sourcemap: trueBoolean,
-        minify: trueBoolean,
-        metafile: trueBoolean,
+        sourcemap: true,
+        minify: true,
+        metafile: true,
         format: 'esm',
         platform: 'browser',
-        color: trueBoolean,
+        color: true,
     } satisfies esbuild.BuildOptions
     // The narrower type is required to avoid non-null assertions elsewhere.
     // The intersection with `esbuild.BuildOptions` is required to allow adding extra properties.
