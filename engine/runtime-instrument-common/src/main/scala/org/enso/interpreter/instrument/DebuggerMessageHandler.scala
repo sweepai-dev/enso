@@ -103,6 +103,9 @@ class DebuggerMessageHandler extends MessageEndpoint {
           case ListBindingsRequest =>
             val bindings = node.listBindings()
             sendToClient(Debugger.createListBindingsResult(bindings))
+          case CompletionsRequest(prefix) =>
+            val completions: java.util.List[String] = node.getCompletions(prefix)
+            sendToClient(Debugger.createCompletionsResult(completions))
           case SessionExitRequest =>
             endSession()
         }

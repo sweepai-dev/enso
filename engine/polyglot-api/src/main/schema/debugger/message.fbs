@@ -1,5 +1,6 @@
 include "evaluation.fbs";
 include "listbindings.fbs";
+include "completions.fbs";
 include "session.fbs";
 
 namespace org.enso.polyglot.debugger.protocol;
@@ -8,6 +9,7 @@ namespace org.enso.polyglot.debugger.protocol;
 union RequestPayload {
     EVALUATE: EvaluationRequest,
     LIST_BINDINGS: ListBindingsRequest,
+    COMPLETIONS: CompletionsRequest,
     SESSION_EXIT: SessionExitRequest
 }
 
@@ -22,6 +24,7 @@ union ResponsePayload {
     EVALUATION_SUCCESS: EvaluationSuccess,
     EVALUATION_FAILURE: EvaluationFailure,
     LIST_BINDINGS: ListBindingsResult,
+    COMPLETIONS: CompletionsResult,
     SESSION_START: SessionStartNotification
 }
 

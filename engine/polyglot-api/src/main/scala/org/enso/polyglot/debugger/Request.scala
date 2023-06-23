@@ -13,6 +13,8 @@ sealed trait Request
   */
 case class EvaluationRequest(expression: String) extends Request
 
+case class CompletionsRequest(prefix: String) extends Request
+
 /** Represents a list bindings request.
   */
 object ListBindingsRequest extends Request

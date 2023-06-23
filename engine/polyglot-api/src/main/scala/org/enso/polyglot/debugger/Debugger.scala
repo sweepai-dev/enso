@@ -1,7 +1,6 @@
 package org.enso.polyglot.debugger
 
 import java.nio.ByteBuffer
-
 import scala.jdk.CollectionConverters._
 import com.google.flatbuffers.FlatBufferBuilder
 import org.enso.polyglot.debugger.protocol.factory.{
@@ -39,6 +38,11 @@ object Debugger {
           Right(ListBindingsRequest)
         case RequestPayload.SESSION_EXIT =>
           Right(SessionExitRequest)
+        case RequestPayload.COMPLETIONS =>
+          val completionsRequest = inMsg
+            .payload(new protocol.CompletionsRequest())
+            .asInstanceOf[protocol.CompletionsRequest]
+          Right(CompletionsRequest(completionsRequest.prefix()))
         case _ =>
           Left(new DeserializationFailedException("Unknown payload type"))
       }
@@ -84,6 +88,17 @@ object Debugger {
               (binding.name(), binding.value())
             }
           Right(ListBindingsResult(bindings.toMap))
+        case ResponsePayload.COMPLETIONS =>
+          val completionsResult = inMsg
+            .payload(new protocol.CompletionsResult())
+            .asInstanceOf[protocol.CompletionsResult]
+          val completions = {
+            for (i <- 0 until completionsResult.candidatesLength()) yield {
+              val candidate = completionsResult.candidates(i)
+              candidate.name()
+            }
+          }
+          Right(CompletionsResult(completions.toList))
         case ResponsePayload.SESSION_START =>
           Right(SessionStartNotification)
         case _ =>
@@ -128,6 +143,18 @@ object Debugger {
     val outMsg = BinaryRequest.createRequest(
       builder,
       RequestPayload.LIST_BINDINGS,
+      requestOffset
+    )
+    builder.finish(outMsg)
+    builder.dataBuffer()
+  }
+
+  def createCompletionRequest(prefix: String): ByteBuffer = {
+    implicit val builder: FlatBufferBuilder = new FlatBufferBuilder(64)
+    val requestOffset                       = RequestFactory.createCompletionsRequest(prefix)
+    val outMsg = BinaryRequest.createRequest(
+      builder,
+      RequestPayload.COMPLETIONS,
       requestOffset
     )
     builder.finish(outMsg)
@@ -216,6 +243,21 @@ object Debugger {
     bindings: java.util.Map[String, Object]
   ): ByteBuffer =
     createListBindingsResult(bindings.asScala.toMap)
+
+  def createCompletionsResult(
+    candidates: java.util.List[String]
+  ): ByteBuffer = {
+    val candidatesScala = candidates.asScala.toList
+    implicit val builder: FlatBufferBuilder = new FlatBufferBuilder(256)
+    val replyOffset = ResponseFactory.createCompletionsResult(candidatesScala)
+    val outMsg = BinaryResponse.createResponse(
+      builder,
+      ResponsePayload.COMPLETIONS,
+      replyOffset
+    )
+    builder.finish(outMsg)
+    builder.dataBuffer()
+  }
 
   /** Creates an SessionStartNotification message in the form of a ByteBuffer
     * that can be sent from the debugger.

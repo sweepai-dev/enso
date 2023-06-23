@@ -33,6 +33,8 @@ case class EvaluationFailure(exception: ExceptionRepresentation)
 case class ListBindingsResult(bindings: Map[String, ObjectRepresentation])
     extends Response
 
+case class CompletionsResult(candidates: List[String]) extends Response
+
 /** Notification that is sent from the debugger that a REPL session should be
   * started.
   */

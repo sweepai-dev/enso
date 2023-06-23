@@ -95,6 +95,19 @@ class DebuggerSessionManagerEndpoint(
         bindingsResult
     }
 
+    var completionsResult: List[String] = _
+    override def listCompletions(prefix: String): List[String] = {
+      ensureUsable()
+      completionsResult = null
+      peer.sendBinary(Debugger.createCompletionRequest(prefix))
+      if (completionsResult == null)
+        throw new IllegalStateException(
+          "DebuggerServer returned but did not send back expected result"
+        )
+      else
+        completionsResult
+    }
+
     var exited: Boolean = false
     def ensureUsable(): Unit = {
       if (exited) {
@@ -132,6 +145,8 @@ class DebuggerSessionManagerEndpoint(
         case ListBindingsResult(bindings) =>
           bindingsResult =
             bindings.view.mapValues(new ObjectRepresentation(_)).toMap
+        case CompletionsResult(candidates) =>
+          completionsResult = candidates
         case SessionStartNotification =>
           throw new IllegalStateException(
             "Session start notification sent while the session is already" +

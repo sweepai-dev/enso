@@ -23,6 +23,8 @@ trait ReplExecutor {
     */
   def listBindings(): Map[String, ObjectRepresentation]
 
+  def listCompletions(prefix: String): List[String]
+
   /** Terminates this REPL session.
     *
     * The last result of [[evaluate]] (or `Unit` if [[evaluate]] was not called

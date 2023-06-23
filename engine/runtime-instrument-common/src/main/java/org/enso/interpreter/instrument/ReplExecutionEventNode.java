@@ -1,5 +1,6 @@
 package org.enso.interpreter.instrument;
 
+import java.util.List;
 import java.util.Map;
 import scala.util.Either;
 
@@ -28,6 +29,8 @@ public interface ReplExecutionEventNode {
    * @return String representation of the provided object or a failure if it cannot be inferred
    */
   Either<Exception, String> showObject(Object object);
+
+  List<String> getCompletions(String prefix);
 
   /**
    * Terminates this REPL session.

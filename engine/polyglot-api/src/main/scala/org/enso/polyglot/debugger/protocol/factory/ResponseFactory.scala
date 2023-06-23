@@ -3,6 +3,8 @@ package org.enso.polyglot.debugger.protocol.factory
 import com.google.flatbuffers.FlatBufferBuilder
 import org.enso.polyglot.debugger.protocol.{
   Binding,
+  CompletionCandidate,
+  CompletionsResult,
   EvaluationFailure,
   EvaluationSuccess,
   ListBindingsResult,
@@ -56,6 +58,23 @@ object ResponseFactory {
     val bindingsOffset =
       ListBindingsResult.createBindingsVector(builder, bindingsArray.toArray)
     ListBindingsResult.createListBindingsResult(builder, bindingsOffset)
+  }
+
+  def createCompletionsResult(
+    candidates: List[String]
+  )(implicit builder: FlatBufferBuilder): Int = {
+    val encodedCandidates = candidates.map(candidate =>
+      CompletionCandidate.createCompletionCandidate(
+        builder,
+        builder.createString(candidate)
+      )
+    )
+    val candidatesOffset =
+      CompletionsResult.createCandidatesVector(
+        builder,
+        encodedCandidates.toArray
+      )
+    CompletionsResult.createCompletionsResult(builder, candidatesOffset)
   }
 
   /** Creates SessionStartNotification inside a [[FlatBufferBuilder]].

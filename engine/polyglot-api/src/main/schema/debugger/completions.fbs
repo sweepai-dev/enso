@@ -1,0 +1,14 @@
+include "common.fbs";
+namespace org.enso.polyglot.debugger.protocol;
+
+table CompletionCandidate {
+    name: string;
+}
+
+table CompletionsRequest {
+    prefix: string;
+}
+
+table CompletionsResult {
+    candidates: [CompletionCandidate];
+}

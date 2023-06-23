@@ -1412,6 +1412,7 @@ lazy val `runtime-instrument-repl-debugger` =
   (project in file("engine/runtime-instrument-repl-debugger"))
     .settings(
       inConfig(Compile)(truffleRunOptionsSettings),
+      frgaalJavaCompilerSetting,
       instrumentationSettings
     )
     .dependsOn(runtime)

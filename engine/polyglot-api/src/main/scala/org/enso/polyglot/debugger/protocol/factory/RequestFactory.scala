@@ -2,6 +2,7 @@ package org.enso.polyglot.debugger.protocol.factory
 
 import com.google.flatbuffers.FlatBufferBuilder
 import org.enso.polyglot.debugger.protocol.{
+  CompletionsRequest,
   EvaluationRequest,
   ListBindingsRequest,
   SessionExitRequest
@@ -34,6 +35,13 @@ object RequestFactory {
   def createListBindingsRequest()(implicit builder: FlatBufferBuilder): Int = {
     ListBindingsRequest.startListBindingsRequest(builder)
     ListBindingsRequest.endListBindingsRequest(builder)
+  }
+
+  def createCompletionsRequest(
+    prefix: String
+  )(implicit builder: FlatBufferBuilder): Int = {
+    val prefixOffset = builder.createString(prefix)
+    CompletionsRequest.createCompletionsRequest(builder, prefixOffset)
   }
 
   /** Creates SessionExitRequest inside a [[FlatBufferBuilder]].

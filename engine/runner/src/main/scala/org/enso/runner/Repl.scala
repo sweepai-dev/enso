@@ -137,6 +137,10 @@ case class Repl(replIO: ReplIO) extends SessionManager {
             bindings.foreach { case (varName, value) =>
               replIO.println(s"$varName = $value")
             }
+          }  else if (line.startsWith(":c")) {
+            val partialExpression = line.stripPrefix(":c ")
+            val completionCandidates = executor.listCompletions(partialExpression)
+            replIO.println(s">>> Completion candidates: $completionCandidates")
           } else if (line == ":quit" || line == ":q") {
             continueRunning = false
           } else {
