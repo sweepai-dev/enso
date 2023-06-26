@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.enso.compiler.context.InlineContext;
+import org.enso.editions.LibraryName;
 import org.enso.interpreter.node.BaseNode.TailStatus;
 import org.enso.interpreter.node.ExpressionNode;
 import org.enso.interpreter.node.expression.builtin.debug.DebugBreakpointNode;
@@ -44,7 +45,11 @@ import org.enso.interpreter.runtime.scope.FramePointer;
 import org.enso.interpreter.runtime.scope.LocalScope;
 import org.enso.interpreter.runtime.scope.ModuleScope;
 import org.enso.interpreter.runtime.state.State;
+import org.enso.polyglot.Suggestion;
 import org.enso.polyglot.debugger.DebugServerInfo;
+import org.enso.searcher.SuggestionsRepo;
+import org.enso.searcher.sql.SqlDatabase;
+import org.enso.searcher.sql.SqlSuggestionsRepo;
 import org.enso.syntax2.Line;
 import org.enso.syntax2.Tree;
 import org.enso.syntax2.Tree.Ident;
@@ -54,6 +59,8 @@ import org.graalvm.options.OptionKey;
 import org.graalvm.polyglot.io.MessageEndpoint;
 import org.graalvm.polyglot.io.MessageTransport;
 import scala.Option;
+import scala.concurrent.ExecutionContext;
+import scala.concurrent.Future;
 import scala.util.Either;
 import scala.util.Left;
 import scala.util.Right;
@@ -168,6 +175,7 @@ public class ReplDebuggerInstrument extends TruffleInstrument {
 
     @Override
     public List<String> getCompletions(String partialExpression) {
+      initSuggestionsDb();
       CompletionContext completionCtx = extractCompletionContext(partialExpression);
       if (completionCtx.type != null) {
         Set<Function> methods =
@@ -181,6 +189,33 @@ public class ReplDebuggerInstrument extends TruffleInstrument {
             .map(Type::getName)
             .collect(Collectors.toUnmodifiableList());
       }
+    }
+
+    private void initSuggestionsDb() {
+      var sqlDb = SqlDatabase.inmem("repl-sql");
+      sqlDb.open();
+      var suggestionsRepo = new SqlSuggestionsRepo(sqlDb, ExecutionContext.global());
+      var initFuture = suggestionsRepo.init();
+      try {
+        initFuture.wait();
+      } catch (InterruptedException e) {
+        throw new IllegalStateException(e);
+      }
+      var ctx = EnsoContext.get(this);
+      var serializationManager = ctx.getCompiler().getSerializationManager();
+      var libName = LibraryName.apply("Standard", "Base");
+      var suggestions = serializationManager.deserializeSuggestions(libName);
+      if (suggestions.isEmpty()) {
+        throw new AssertionError("No suggestions found in the Standard library");
+      }
+      List<Suggestion> allSuggestions = suggestions.get().getSuggestions();
+      var futureInsert = suggestionsRepo.insertBatchJava(allSuggestions.toArray(Suggestion[]::new));
+      try {
+        futureInsert.wait();
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+      System.out.println("All suggestions initialized");
     }
 
     private Set<Type> searchTypes(String partialTypeName) {

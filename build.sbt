@@ -1416,6 +1416,7 @@ lazy val `runtime-instrument-repl-debugger` =
       instrumentationSettings
     )
     .dependsOn(runtime)
+    .dependsOn(`searcher`)
     .dependsOn(`runtime-instrument-common`)
 
 lazy val `runtime-instrument-runtime-server` =
