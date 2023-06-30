@@ -2,8 +2,10 @@ package org.enso.tools.enso4igv.enso;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
+
 import org.enso.compiler.core.EnsoParser;
 import org.enso.compiler.core.IR;
 import org.enso.compiler.core.IR$Module$Scope$Definition$Data;
@@ -11,6 +13,7 @@ import org.enso.compiler.core.IR$Module$Scope$Definition$SugaredType;
 import org.netbeans.api.editor.mimelookup.MimeRegistration;
 import org.netbeans.api.lsp.StructureElement;
 import org.netbeans.spi.lsp.StructureProvider;
+
 import scala.collection.Iterator;
 
 @MimeRegistration(mimeType = "application/x-enso", service = StructureProvider.class)
@@ -36,6 +39,7 @@ public final class EnsoStructure implements StructureProvider {
       collectStructureItem(arr, b);
     }
   }
+
   private static void collectStructureItem(ArrayList arr, IR b) {
     switch (b) {
       case IR$Module$Scope$Definition$SugaredType type -> {

@@ -1,6 +1,7 @@
 package org.enso.tools.enso4igv.enso;
 
 import javax.swing.text.PlainDocument;
+
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 

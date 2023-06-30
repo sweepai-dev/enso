@@ -44,7 +44,7 @@
                 <configuration>
                     <compilerId>frgaal</compilerId>
                     <source>19</source>
-                    <target>1.8</target>
+                    <target>17</target>
                     <compilerArgs>
                         <arg>-Xlint:deprecation</arg>
                         <arg>--enable-preview</arg>
@@ -207,6 +207,30 @@
             <type>jar</type>
         </dependency>
         <dependency>
+            <!--
+                $ sbt runtime/assembly
+                $ mvn install:install-file
+                    -Dfile=runtime.jar
+                    -DgroupId=org.enso.engine -DartifactId=runtime
+                    -Dpackaging=jar -Dversion=1.0-SNAPSHOT
+            -->
+            <groupId>org.enso.engine</groupId>
+            <artifactId>runtime</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.truffle</groupId>
+            <artifactId>truffle-api</artifactId>
+            <version>${graalvm.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>graal-sdk</artifactId>
+            <version>${graalvm.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-netbeans-modules-nbjunit</artifactId>
             <version>${netbeans.version}</version>
@@ -226,6 +250,7 @@
         <netbeans.version>RELEASE113</netbeans.version>
         <netbeans.compile.on.save>none</netbeans.compile.on.save>
         <enso.root>${basedir}/../../</enso.root>
+        <graalvm.version>22.3.2</graalvm.version>
     </properties>
     <profiles>
         <profile>
