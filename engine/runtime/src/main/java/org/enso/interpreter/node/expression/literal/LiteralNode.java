@@ -8,7 +8,6 @@ import java.util.function.Predicate;
 import org.enso.compiler.core.IR;
 import org.enso.interpreter.node.ExpressionNode;
 import org.enso.interpreter.runtime.data.text.Text;
-import org.enso.interpreter.runtime.number.EnsoBigInteger;
 import org.enso.interpreter.runtime.tag.Patchable;
 
 /** Generic literal node. */
@@ -57,7 +56,7 @@ public class LiteralNode extends ExpressionNode implements Patchable {
    * @return a node representing the literal given by {@code value}
    */
   public static LiteralNode build(BigInteger value) {
-    return new LiteralNode(new EnsoBigInteger(value));
+    return new LiteralNode(value);
   }
 
   /**

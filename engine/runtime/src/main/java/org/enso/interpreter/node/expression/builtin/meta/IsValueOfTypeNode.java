@@ -14,7 +14,6 @@ import org.enso.interpreter.runtime.EnsoContext;
 import org.enso.interpreter.runtime.callable.UnresolvedSymbol;
 import org.enso.interpreter.runtime.data.Type;
 import org.enso.interpreter.runtime.library.dispatch.TypesLibrary;
-import org.enso.interpreter.runtime.number.EnsoBigInteger;
 import org.enso.interpreter.runtime.type.TypesGen;
 
 /** An implementation of the payload check against the expected panic type. */
@@ -93,8 +92,11 @@ public abstract class IsValueOfTypeNode extends Node {
       return checkParentTypes(numbers.getDecimal(), expectedType);
     }
 
-    @Specialization
-    boolean doBigIntegerCheck(Type expectedType, EnsoBigInteger value) {
+    @Specialization(guards = "interop.fitsInBigInteger(value)")
+    boolean doBigIntegerCheck(
+        Type expectedType,
+        Object value,
+        @Shared("interop") @CachedLibrary(limit = "3") InteropLibrary interop) {
       var numbers = EnsoContext.get(this).getBuiltins().number();
       return checkParentTypes(numbers.getBigInteger(), expectedType);
     }

@@ -3,7 +3,6 @@ package org.enso.interpreter.runtime.number;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -52,69 +51,49 @@ public final class EnsoBigInteger extends Number implements TruffleObject {
   }
 
   @ExportMessage
-  final boolean fitsInByte() {
-    return false;
-  }
-
-  @ExportMessage
-  final boolean fitsInShort() {
-    return false;
-  }
-
-  @ExportMessage
-  final boolean fitsInInt() {
-    return false;
-  }
-
-  @ExportMessage
-  final boolean fitsInLong() {
-    return false;
-  }
-
-  @ExportMessage
-  final boolean fitsInFloat() {
-    return false;
-  }
-
-  @ExportMessage
-  final boolean fitsInDouble() {
-    return false;
+  boolean fitsInBigInteger() {
+    return true;
   }
 
   @ExportMessage
   @CompilerDirectives.TruffleBoundary
-  final byte asByte() throws UnsupportedMessageException {
+  byte asByte() {
     return byteValue();
   }
 
   @ExportMessage
   @CompilerDirectives.TruffleBoundary
-  final short asShort() throws UnsupportedMessageException {
+  short asShort() {
     return shortValue();
   }
 
   @ExportMessage
   @CompilerDirectives.TruffleBoundary
-  final int asInt() throws UnsupportedMessageException {
+  int asInt() {
     return intValue();
   }
 
   @ExportMessage
   @CompilerDirectives.TruffleBoundary
-  final long asLong() throws UnsupportedMessageException {
+  long asLong() {
     return longValue();
   }
 
   @ExportMessage
   @CompilerDirectives.TruffleBoundary
-  final float asFloat() throws UnsupportedMessageException {
+  float asFloat() {
     return floatValue();
   }
 
   @ExportMessage
   @CompilerDirectives.TruffleBoundary
-  final double asDouble() throws UnsupportedMessageException {
+  double asDouble() {
     return doubleValue();
+  }
+
+  @ExportMessage
+  BigInteger asBigInteger() {
+    return value;
   }
 
   @ExportMessage

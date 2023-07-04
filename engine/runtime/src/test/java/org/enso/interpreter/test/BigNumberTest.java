@@ -102,12 +102,6 @@ public class BigNumberTest extends TestBase {
 
   @Test
   public void averageOfMixedArrayOverDouble() throws Exception {
-    boolean assertsOn = false;
-    assert assertsOn = true;
-    if (assertsOn) {
-      // skip this test when asserts are on
-      return;
-    }
     var code = """
     from Standard.Base.Data.Vector import Vector
     polyglot java import org.enso.example.TestClass

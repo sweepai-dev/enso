@@ -128,7 +128,9 @@ public abstract class TypeOfNode extends Node {
     Type doPolyglotNumber(
         Interop type, Object value, @CachedLibrary(limit = "3") InteropLibrary interop) {
       Builtins builtins = EnsoContext.get(this).getBuiltins();
-      if (interop.fitsInInt(value)) {
+      if (interop.fitsInBigInteger(value)) {
+        return builtins.number().getBigInteger();
+      } else if (interop.fitsInInt(value)) {
         return builtins.number().getInteger();
       } else if (interop.fitsInDouble(value)) {
         return builtins.number().getDecimal();
