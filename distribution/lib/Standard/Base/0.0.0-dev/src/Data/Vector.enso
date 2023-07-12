@@ -17,6 +17,7 @@ import project.Errors.Common.Type_Error
 import project.Errors.Illegal_Argument.Illegal_Argument
 import project.Errors.Problem_Behavior.Problem_Behavior
 import project.Function.Function
+import project.IO
 import project.Math
 import project.Meta
 import project.Nothing.Nothing
@@ -1226,28 +1227,35 @@ check_start_valid start length function =
     if used_start < 0 || used_start > length then Error.throw (Index_Out_Of_Bounds.Error start length+1) else
         function used_start
 
-== : Vector Any -> Vector Any -> Vector Any
-== a b = caret 0 0 = a b
+caret_eq : Vector Any -> Vector Any
+caret_eq a b = caret 0 0 (_==_) a b
 
-^==^ : Vector Any -> Vector Any -> Vector Any
-^==^ a b = caret 1 1 = a b
+# ^==^
+ceqc : Vector Any -> Vector Any -> Vector Any
+ceqc a b = caret 1 1 (_==_) a b
 
-^^==^^ : Vector Any -> Vector Any -> Vector Any
-^^==^^ a b = caret 2 2 = a b
+cceqcc : Vector Any -> Vector Any -> Vector Any
+cceqcc a b = caret 2 2 (_==_) a b
 
-^== : Vector Any -> Vector Any -> Vector Any
-^== a b = caret 1 0 = a b
+ceq : Vector Any -> Vector Any -> Vector Any
+ceq a b = caret 1 0 (_==_) a b
 
-==^ : Vector Any -> Vector Any -> Vector Any
-==^ a b = caret 0 1 = a b
+eqc : Vector Any -> Vector Any -> Vector Any
+eqc a b = caret 0 1 (_==_) a b
 
 caret : Integer -> Integer -> (Any -> Any) -> Vector Any -> Vector Any -> Vector Any
-cart na nb op a b
+caret na nb op a b =
+    ##
+        IO.println 'CARET'
+        IO.println na
+        IO.println nb
+        IO.println a
+        IO.println b
     case na > 0 && nb > 0 of
         True ->
-            a.zip b (x-> y-> caret (na-1) (nb-1) x y)
+            a.zip b (x-> y-> caret (na-1) (nb-1) op x y)
         False -> case na > 0 of
-            True -> a.map (x-> caret (na-1) nb x b)
+            True -> a.map (x-> caret (na-1) nb op x b)
             False -> case nb > 0 of
-                True -> b.map (y-> caret na (nb-1) a y)
-                 False -> op a b
+                True -> b.map (y-> caret na (nb-1) op a y)
+                False -> op a b

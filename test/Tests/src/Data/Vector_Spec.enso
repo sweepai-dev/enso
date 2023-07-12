@@ -1,5 +1,6 @@
 from Standard.Base import all
 from Standard.Base.Data.Array_Proxy import Array_Proxy
+from Standard.Base.Data.Vector import caret_eq, ceqc, cceqcc, ceq, eqc
 import Standard.Base.Data.Vector.Empty_Error
 import Standard.Base.Errors.Common.Incomparable_Values
 import Standard.Base.Errors.Common.Index_Out_Of_Bounds
@@ -788,13 +789,17 @@ type_spec name alter = Test.group name <|
         Warning.limit_reached sorted . should_equal True
 
 spec =
-    Test.group "caret" <|
-        [1, 2, 3] == [1, 2, 3] . should_equal True
-        [1, 2, 3] ==. [1, 2, 3] . should_equal True
-        [1, 2, 3] ^==^ [1, 2, 3] . should_equal [True, True, True]
-        [[1, 2], [3, 4], [1, 2]] ^== [1, 2] . should_equal [True, False, True]
-        [1, 2] ==^ [[1, 2], [3, 4], [1, 2]] . should_equal [True, False, True]
-        [[1, 2], [3, 4], [1, 2]] ^^==^^ [[1, 2], [30, 40], [1, 2]] . should_equal [[True, True], [False, False], [True, True]]
+    Test.group "caretasdfasdf" <|
+        Test.specify "asdf" <|
+            IO.println 'AAA'
+            IO.println <| [1, 2, 3] == [1, 2, 3]
+            #bad
+            #[1, 2, 3] == [1, 2, 3] . should_equal True
+            caret_eq [1, 2, 3] [1, 2, 3] . should_equal True
+            ceqc [1, 2, 3] [1, 2, 3] . should_equal [True, True, True]
+            ceq [[1, 2], [3, 4], [1, 2]] [1, 2] . should_equal [True, False, True]
+            eqc [1, 2] [[1, 2], [3, 4], [1, 2]] . should_equal [True, False, True]
+            cceqcc [[1, 2], [3, 4], [1, 2]] [[1, 2], [30, 40], [1, 2]] . should_equal [[True, True], [False, False], [True, True]]
 
         #[1, 2, 3] ^*^ [10, 20, 30] . should_equal [10, 40, 90]
 
