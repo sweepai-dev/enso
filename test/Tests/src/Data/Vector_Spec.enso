@@ -788,6 +788,16 @@ type_spec name alter = Test.group name <|
         Warning.limit_reached sorted . should_equal True
 
 spec =
+    Test.group "caret" <|
+        [1, 2, 3] == [1, 2, 3] . should_equal True
+        [1, 2, 3] ==. [1, 2, 3] . should_equal True
+        [1, 2, 3] ^==^ [1, 2, 3] . should_equal [True, True, True]
+        [[1, 2], [3, 4], [1, 2]] ^== [1, 2] . should_equal [True, False, True]
+        [1, 2] ==^ [[1, 2], [3, 4], [1, 2]] . should_equal [True, False, True]
+        [[1, 2], [3, 4], [1, 2]] ^^==^^ [[1, 2], [30, 40], [1, 2]] . should_equal [[True, True], [False, False], [True, True]]
+
+        #[1, 2, 3] ^*^ [10, 20, 30] . should_equal [10, 40, 90]
+
     Test.group "Vector/Array equality" <|
         v1 = [1, 2, 3]
         a1 = v1.to_array
