@@ -23,12 +23,20 @@ export interface CreateFormPassthroughProps {
 /** `CreateFormPassthroughProps`, plus props that should be defined in the wrapper component. */
 export interface CreateFormProps extends CreateFormPassthroughProps, React.PropsWithChildren {
     title: string
+    submitButtonText?: string
     onSubmit: (event: React.FormEvent) => Promise<void>
 }
 
 /** A form to create an element. */
 function CreateForm(props: CreateFormProps) {
-    const { title, left, top, children, onSubmit: innerOnSubmit } = props
+    const {
+        title,
+        left,
+        top,
+        children,
+        submitButtonText = 'Create',
+        onSubmit: innerOnSubmit,
+    } = props
     const { unsetModal } = modalProvider.useSetModal()
 
     const onSubmit = async (event: React.FormEvent) => {
@@ -53,8 +61,8 @@ function CreateForm(props: CreateFormProps) {
                 {children}
                 <input
                     type="submit"
-                    className="hover:cursor-pointer inline-block text-white bg-blue-600 rounded-full px-4 py-1 m-2"
-                    value="Create"
+                    className="hover:cursor-pointer inline-block text-white bg-blue-600 hover:bg-blue-700 transition ease-in rounded-full px-4 py-1 m-2"
+                    value={submitButtonText}
                 />
             </form>
         </Modal>

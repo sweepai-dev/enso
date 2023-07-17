@@ -34,11 +34,11 @@ import PermissionDisplay, * as permissionDisplay from './permissionDisplay'
 import ProjectActionButton, * as projectActionButton from './projectActionButton'
 import ContextMenu from './contextMenu'
 import ContextMenuEntry from './contextMenuEntry'
+import DashboardTopBar from './dashboardTopBar'
 import Ide from './ide'
 import ManagePermissionsModal from './managePermissionsModal'
 import Rows from './rows'
 import Templates from './templates'
-import TopBar from './topBar'
 
 import ConfirmDeleteModal from './confirmDeleteModal'
 import RenameModal from './renameModal'
@@ -867,10 +867,7 @@ function Dashboard(props: DashboardProps) {
                         className="mx-1"
                         onClick={event => {
                             event.stopPropagation()
-                            const buttonPosition =
-                                // This type assertion is safe as this event handler is on a button.
-                                // eslint-disable-next-line no-restricted-syntax
-                                (event.target as HTMLButtonElement).getBoundingClientRect()
+                            const buttonPosition = event.currentTarget.getBoundingClientRect()
                             if (assetType === backendModule.AssetType.project) {
                                 void toast.promise(handleCreateProject(null), {
                                     loading: 'Creating new empty project...',
@@ -1139,9 +1136,12 @@ function Dashboard(props: DashboardProps) {
                 }
             }}
             onKeyDown={handleEscapeKey}
+            onDragStart={event => {
+                event.preventDefault()
+            }}
             onDragEnter={openDropZone}
         >
-            <TopBar
+            <DashboardTopBar
                 supportsLocalBackend={supportsLocalBackend}
                 projectName={project?.name ?? null}
                 tab={tab}

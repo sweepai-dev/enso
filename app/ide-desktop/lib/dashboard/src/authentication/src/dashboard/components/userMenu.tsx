@@ -43,13 +43,17 @@ function UserMenu() {
 
     const { setModal } = modalProvider.useSetModal()
 
-    const goToProfile = () => {
+    const goToProfile = React.useCallback(() => {
         // TODO: Implement this when the backend endpoints are implemented.
-    }
+    }, [])
 
-    const goToLoginPage = () => {
+    const goToLoginPage = React.useCallback(() => {
         navigate(app.LOGIN_PATH)
-    }
+    }, [/* should never change */ navigate])
+
+    const goToUserList = React.useCallback(() => {
+        navigate(app.LIST_USERS_PATH)
+    }, [/* should never change */ navigate])
 
     // The shape of the JWT payload is statically known.
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -73,6 +77,7 @@ function UserMenu() {
                     <UserMenuItem disabled onClick={goToProfile}>
                         Your profile
                     </UserMenuItem>
+                    <UserMenuItem onClick={goToUserList}>User list</UserMenuItem>
                     {canChangePassword && (
                         <UserMenuItem
                             onClick={() => {

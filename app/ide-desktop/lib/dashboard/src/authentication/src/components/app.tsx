@@ -51,12 +51,14 @@ import * as modalProvider from '../providers/modal'
 import * as sessionProvider from '../authentication/providers/session'
 
 import ConfirmRegistration from '../authentication/components/confirmRegistration'
-import Dashboard from '../dashboard/components/dashboard'
 import ForgotPassword from '../authentication/components/forgotPassword'
 import Login from '../authentication/components/login'
 import Registration from '../authentication/components/registration'
 import ResetPassword from '../authentication/components/resetPassword'
 import SetUsername from '../authentication/components/setUsername'
+
+import Dashboard from '../dashboard/components/dashboard'
+import ListUsers from '../dashboard/components/listUsers'
 
 // =================
 // === Constants ===
@@ -76,6 +78,8 @@ export const FORGOT_PASSWORD_PATH = '/forgot-password'
 export const RESET_PASSWORD_PATH = '/password-reset'
 /** Path to the set username page. */
 export const SET_USERNAME_PATH = '/set-username'
+/** Path to the list users page. */
+export const LIST_USERS_PATH = '/list-users'
 
 // ===========
 // === App ===
@@ -174,6 +178,7 @@ function AppRouter(props: AppProps) {
                         path={DASHBOARD_PATH}
                         element={shouldShowDashboard && <Dashboard {...props} />}
                     />
+                    <router.Route path={LIST_USERS_PATH} element={<ListUsers />} />
                 </router.Route>
                 {/* Semi-protected pages are visible to users currently registering. */}
                 <router.Route element={<authProvider.SemiProtectedLayout />}>
