@@ -1,0 +1,56 @@
+from Standard.Base import all
+
+## Enso type representing a color scheme.
+type Color_Scheme
+    ## Sequential Blues (light to dark) color scheme.
+    Blues
+
+    ## Sequential Greens (light to dark) color scheme.
+    Greens
+
+    ## Sequential Greys (light to dark) color scheme.
+    Greys
+
+    ## Sequential Oranges (light to dark) color scheme.
+    Oranges
+
+    ## Sequential Purples (light to dark) color scheme.
+    Purples
+
+    ## Sequential Reds (light to dark) color scheme.
+    Reds
+
+    ## Category 10 color scheme.
+    Category_10
+
+    ## Accent color scheme.
+    Accent
+
+    ## Dark 2 color scheme.
+    Dark_2
+
+    ## Paired color scheme.
+    Paired
+
+    ## Pastel 1 color scheme.
+    Pastel_1
+
+    ## Pastel 2 color scheme.
+    Pastel_2
+
+    ## Set 1 color scheme.
+    Set_1
+
+    ## Set 2 color scheme.
+    Set_2
+
+    ## Set 3 color scheme.
+    Set_3
+
+    ## Tableau 10 color scheme.
+    Tableau_10
+
+    ## PRIVATE
+       Convert to Text
+    to_text : Text
+    to_text self = self.pretty

@@ -4,6 +4,43 @@ from Standard.Table import Column, Table
 
 import project.Helpers
 
+## Enso type representing a symbol.
+type Plot_Symbol
+    ## A cross of plus sign.
+    Cross
+
+    ## A circle.
+    Circle
+
+    ## A diamond.
+    Diamond
+
+    ## A square.
+    Square
+
+    ## A star.
+    Star
+
+    ## A triangle pointing up.
+    Triangle
+
+    ## A Latin Y (or wye).
+    Wye
+
+    ## PRIVATE
+    to_text : Text
+    to_text self = case self of
+        Plot_Symbol.Cross -> "cross"
+        Plot_Symbol.Circle -> "circle"
+        Plot_Symbol.Diamond -> "diamond"
+        Plot_Symbol.Square -> "square"
+        Plot_Symbol.Star -> "star"
+        Plot_Symbol.Triangle -> "triangle"
+        Plot_Symbol.Wye -> "wye"
+
+type Plot_Series
+    Value data:Text shape:Plot_Symbol=Plot_Symbol.Circle
+
 ## PRIVATE
 
    Name of the index column that may be generated to plot against.
