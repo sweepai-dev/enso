@@ -1594,10 +1594,10 @@ dependencies = [
  "convert_case 0.6.0",
  "ensogl",
  "ensogl-hardcoded-theme",
+ "ensogl-icons",
  "ensogl-text-msdf",
  "ensogl-tooltip",
  "ide-view-component-list-panel-grid",
- "ide-view-component-list-panel-icons",
  "ide-view-graph-editor",
  "wasm-bindgen",
 ]
@@ -3115,6 +3115,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ensogl-icons"
+version = "0.1.0"
+dependencies = [
+ "ensogl-core",
+ "failure",
+]
+
+[[package]]
 name = "ensogl-label"
 version = "0.1.0"
 dependencies = [
@@ -4329,6 +4337,7 @@ dependencies = [
  "ensogl-grid-view",
  "ensogl-gui-component",
  "ensogl-hardcoded-theme",
+ "ensogl-icons",
  "ensogl-scroll-area",
  "ensogl-selector",
  "ensogl-shadow",
@@ -4336,7 +4345,6 @@ dependencies = [
  "ensogl-tooltip",
  "ide-view-component-list-panel-breadcrumbs",
  "ide-view-component-list-panel-grid",
- "ide-view-component-list-panel-icons",
  "ordered-float",
 ]
 
@@ -4349,9 +4357,9 @@ dependencies = [
  "ensogl-derive-theme",
  "ensogl-grid-view",
  "ensogl-hardcoded-theme",
+ "ensogl-icons",
  "ensogl-text",
  "ide-view-component-list-panel-grid",
- "ide-view-component-list-panel-icons",
 ]
 
 [[package]]
@@ -4364,19 +4372,11 @@ dependencies = [
  "ensogl-grid-view",
  "ensogl-gui-component",
  "ensogl-hardcoded-theme",
+ "ensogl-icons",
  "ensogl-shadow",
  "ensogl-text",
  "failure",
- "ide-view-component-list-panel-icons",
  "num_enum",
-]
-
-[[package]]
-name = "ide-view-component-list-panel-icons"
-version = "0.1.0"
-dependencies = [
- "ensogl-core",
- "failure",
 ]
 
 [[package]]

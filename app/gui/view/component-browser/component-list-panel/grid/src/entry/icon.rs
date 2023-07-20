@@ -1,14 +1,14 @@
 //! All icons that are used in the Component Browser.
 
 use crate::prelude::*;
-use ide_view_component_list_panel_icons::common_part::*;
+use ensogl_icons::common_part::*;
 
 use ensogl_core::data::color;
 use ensogl_core::display::shape::compound::path::path;
 use ensogl_core::display::IntoGlsl;
 use ensogl_hardcoded_theme::application::component_browser::component_list_panel as theme;
-use ide_view_component_list_panel_icons::define_icons;
-use ide_view_component_list_panel_icons::SHRINK_AMOUNT;
+use ensogl_icons::define_icons;
+use ensogl_icons::SHRINK_AMOUNT;
 use std::f32::consts::PI;
 use theme::grid::entry::icon::dull_color_alpha;
 use theme::grid::entry::special_icons;
@@ -18,8 +18,8 @@ use theme::grid::entry::special_icons;
 // === Export ===
 // ==============
 
-pub use ide_view_component_list_panel_icons::any;
-pub use ide_view_component_list_panel_icons::SIZE;
+pub use ensogl_icons::any;
+pub use ensogl_icons::SIZE;
 
 
 
