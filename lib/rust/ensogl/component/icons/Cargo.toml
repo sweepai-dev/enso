@@ -7,3 +7,5 @@ edition = "2021"
 [dependencies]
 ensogl-core = { path = "../../core" }
 failure = { workspace = true }
+ensogl-hardcoded-theme = { path = "../../app/theme/hardcoded" }
+

@@ -23,7 +23,7 @@ mod prelude {
 
 pub mod common_part;
 mod define_macro;
-
+pub mod icon;
 
 
 // =================

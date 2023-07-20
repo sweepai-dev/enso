@@ -53,9 +53,9 @@ use ensogl_core::Animation;
 use ensogl_grid_view as grid_view;
 use ensogl_grid_view::Viewport;
 use ensogl_hardcoded_theme::application::component_browser as component_browser_theme;
+use ensogl_icons::icon;
 use entry::Entry;
 use grid_view::Col;
-use ide_view_component_list_panel_grid::entry::icon;
 
 
 

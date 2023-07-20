@@ -19,11 +19,11 @@ use ensogl::display::shape::Rectangle;
 use ensogl::display::world::World;
 use ensogl::display::DomSymbol;
 use ensogl::system::web;
+use ensogl_icons::icon;
 use ensogl_icons::SHRINK_AMOUNT;
 use ensogl_icons::SIZE;
 use ensogl_text_msdf::run_once_initialized;
 use ensogl_tooltip::Tooltip;
-use ide_view_component_list_panel_grid::entry::icon;
 use ide_view_graph_editor::component::node::action_bar;
 
 

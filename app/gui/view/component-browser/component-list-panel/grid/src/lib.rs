@@ -32,6 +32,9 @@
 
 use crate::prelude::*;
 
+use crate::entry::DimmedGroups;
+use crate::layout::Layout;
+use ensogl_icons::icon;
 use crate::entry::icon;
 
 use enso_frp as frp;
