@@ -1553,6 +1553,7 @@ dependencies = [
  "ensogl-core",
  "ensogl-grid-view",
  "ensogl-hardcoded-theme",
+ "ensogl-icons",
  "ensogl-selector",
  "ensogl-text",
  "ensogl-text-msdf",
@@ -2202,6 +2203,7 @@ dependencies = [
  "ensogl-dynamic-assets",
  "ensogl-examples",
  "ensogl-hardcoded-theme",
+ "ensogl-icons",
  "ensogl-text-msdf",
  "failure",
  "flo_stream",
@@ -3118,6 +3120,7 @@ name = "ensogl-icons"
 version = "0.1.0"
 dependencies = [
  "ensogl-core",
+ "ensogl-hardcoded-theme",
  "failure",
 ]
 
@@ -4342,7 +4345,6 @@ dependencies = [
  "ensogl-hardcoded-theme",
  "ensogl-icons",
  "ensogl-text",
- "ide-view-component-list-panel-grid",
 ]
 
 [[package]]

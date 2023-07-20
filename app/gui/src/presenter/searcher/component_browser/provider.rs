@@ -307,7 +307,7 @@ fn group_to_header_model(
 macro_rules! kind_to_icon {
     ([ $( $variant:ident ),* ] $kind:ident) => {
         {
-            use component_grid::entry::icon::Id;
+            use ensogl_icons::icon::Id;
             use model::suggestion_database::entry::Kind;
             match $kind {
                 $( Kind::$variant => Id::$variant, )*

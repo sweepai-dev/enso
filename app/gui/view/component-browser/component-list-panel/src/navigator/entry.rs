@@ -2,7 +2,7 @@
 
 use ensogl_core::prelude::*;
 
-use crate::grid::entry::icon;
+use ensogl_icons::icon;
 
 use enso_frp as frp;
 use ensogl_core::application::command::FrpNetworkProvider;
