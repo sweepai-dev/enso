@@ -2557,6 +2557,7 @@ dependencies = [
  "enso-prelude",
  "enso-profiler",
  "enso-text",
+ "ensogl-icons",
  "failure",
  "flo_stream",
  "futures",

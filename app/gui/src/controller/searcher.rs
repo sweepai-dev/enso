@@ -30,6 +30,8 @@ pub mod breadcrumbs;
 pub mod component;
 pub mod input;
 
+use crate::controller::searcher::breadcrumbs::BreadcrumbEntry;
+pub use action::Action;
 
 
 // =================
@@ -369,8 +371,8 @@ impl Searcher {
 
     /// A list of breadcrumbs' text labels to be displayed. The list is updated by
     /// [`Self::enter_entry`].
-    pub fn breadcrumbs(&self) -> Vec<ImString> {
-        self.breadcrumbs.names()
+    pub fn breadcrumbs(&self) -> Vec<BreadcrumbEntry> {
+        self.breadcrumbs.items().collect()
     }
 
     /// Select the breadcrumb with the index [`id`]. The displayed content of the browser will be

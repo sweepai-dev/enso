@@ -19,8 +19,8 @@ use enso_doc_parser::doc_sections::HtmlString;
 use enso_doc_parser::DocSection;
 use enso_doc_parser::Tag;
 use enso_text::Location;
+use ensogl_icons::icon;
 use language_server::types::FieldAction;
-
 
 // ==============
 // === Export ===
@@ -530,6 +530,17 @@ impl Entry {
 
 // === Other Properties ===
 
+macro_rules! kind_to_icon {
+    ([ $( $variant:ident ),* ] $kind:ident) => {
+        {
+            use ensogl_icons::icon::Id;
+            match $kind {
+                $( Kind::$variant => Id::$variant, )*
+            }
+        }
+    }
+}
+
 impl Entry {
     /// Return the Method Id of suggested method.
     ///
@@ -610,6 +621,14 @@ impl Entry {
             Kind::Module => self.defined_in.is_main_module(),
             _ => false,
         }
+    }
+
+    /// Returns the icon of the entry.
+    pub fn icon(&self) -> icon::Id {
+        let kind = self.kind;
+        let icon_name = self.icon_name.as_ref();
+        let icon = icon_name.and_then(|n| n.to_pascal_case().parse().ok());
+        icon.unwrap_or_else(|| for_each_kind_variant!(kind_to_icon(kind)))
     }
 }
 

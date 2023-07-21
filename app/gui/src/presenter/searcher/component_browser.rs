@@ -16,6 +16,7 @@ use enso_suggestion_database::documentation_ir::EntryDocumentation;
 use enso_text as text;
 use ide_view as view;
 use ide_view::component_browser;
+use ide_view::component_browser::breadcrumbs::Breadcrumb;
 use ide_view::component_browser::component_list_panel::grid as component_grid;
 use ide_view::component_browser::component_list_panel::BreadcrumbId;
 use ide_view::graph_editor::NodeId;
@@ -102,12 +103,13 @@ impl Model {
     }
 
     fn update_breadcrumbs(&self) {
-        let names = self.controller.breadcrumbs().into_iter();
+        let entries = self.controller.breadcrumbs().into_iter();
         let browser = &self.view;
         // We only update the breadcrumbs starting from the second element because the first
         // one is reserved as a section name.
         let from = 1;
-        let breadcrumbs_from = (names.map(Into::into).collect(), from);
+        let breadcrumbs_from =
+            (entries.map(|entry| Breadcrumb::new(&entry.name(), entry.icon())).collect(), from);
         browser.model().list.model().breadcrumbs.set_entries_from(breadcrumbs_from);
     }
 
