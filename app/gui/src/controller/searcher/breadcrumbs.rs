@@ -6,6 +6,7 @@ use crate::controller::searcher::component;
 
 use double_representation::name::QualifiedName;
 use double_representation::name::QualifiedNameRef;
+use ensogl_icons::icon;
 use model::suggestion_database::Entry;
 
 
@@ -67,6 +68,11 @@ impl Breadcrumbs {
             self.list.borrow().get(index - 1).map(BreadcrumbEntry::id)
         }
     }
+
+    /// Return a list of breadcrumbs to be displayed in the panel.
+    pub fn items(&self) -> impl Iterator<Item = BreadcrumbEntry> + '_ {
+        self.list.borrow().iter().cloned().collect_vec().into_iter()
+    }
 }
 
 
@@ -81,6 +87,7 @@ pub struct BreadcrumbEntry {
     displayed_name: ImString,
     component_id:   component::Id,
     qualified_name: QualifiedName,
+    icon:           Option<icon::Id>,
 }
 
 impl BreadcrumbEntry {
@@ -98,13 +105,19 @@ impl BreadcrumbEntry {
     pub fn qualified_name(&self) -> &QualifiedName {
         &self.qualified_name
     }
+
+    /// An icon of the entry.
+    pub fn icon(&self) -> Option<icon::Id> {
+        self.icon
+    }
 }
 
 impl From<(component::Id, Rc<Entry>)> for BreadcrumbEntry {
     fn from((component_id, entry): (component::Id, Rc<Entry>)) -> Self {
         let qualified_name = entry.qualified_name();
         let displayed_name = ImString::new(&entry.name);
-        BreadcrumbEntry { displayed_name, component_id, qualified_name }
+        let icon = Some(entry.icon());
+        BreadcrumbEntry { displayed_name, component_id, qualified_name, icon }
     }
 }
 

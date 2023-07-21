@@ -7,7 +7,6 @@ use crate::controller::searcher::component;
 use crate::presenter;
 
 use enso_frp as frp;
-use enso_suggestion_database::entry::for_each_kind_variant;
 use enso_text as text;
 use ensogl_component::list_view;
 use ensogl_component::list_view::entry::GlyphHighlightedLabel;
@@ -304,30 +303,13 @@ fn group_to_header_model(
     component_grid::HeaderModel { caption: group.name.clone_ref(), can_be_entered }
 }
 
-macro_rules! kind_to_icon {
-    ([ $( $variant:ident ),* ] $kind:ident) => {
-        {
-            use ensogl_icons::icon::Id;
-            use model::suggestion_database::entry::Kind;
-            match $kind {
-                $( Kind::$variant => Id::$variant, )*
-            }
-        }
-    }
-}
-
 fn component_to_entry_model(component: &component::Component) -> component_grid::EntryModel {
     let can_be_entered = component.can_be_entered();
     let match_info = component.match_info.borrow();
     let caption = component.label();
     let highlighted = bytes_of_matched_letters(&match_info, &caption);
     let icon = match &component.data {
-        component::Data::FromDatabase { entry, .. } => {
-            let kind = entry.kind;
-            let icon_name = entry.icon_name.as_ref();
-            let icon = icon_name.and_then(|n| n.to_pascal_case().parse().ok());
-            icon.unwrap_or_else(|| for_each_kind_variant!(kind_to_icon(kind)))
-        }
+        component::Data::FromDatabase { entry, .. } => entry.icon(),
         component::Data::Virtual { snippet } => snippet.icon,
     };
     component_grid::EntryModel {
