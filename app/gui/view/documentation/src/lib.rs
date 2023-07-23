@@ -140,7 +140,7 @@ impl Model {
         self
     }
 
-    /// Add `<style>` tag with the stylesheet to the `outer_dom`.
+    /// Add `<style>` tag with the stylesheet to the `style_container`.
     fn load_css_stylesheet(&self) {
         let stylesheet = include_str!("../assets/styles.css");
         let element = web::document.create_element_or_panic("style");
@@ -199,7 +199,7 @@ impl Model {
         self.dom.set_dom_size(dom_size);
         self.dom.set_xy(dom_size / 2.0);
 
-        self.background.set_color(style.background.clone());
+        self.background.set_color(style.background);
         self.background.set_corner_radius(style.corner_radius);
         self.background.set_size(size);
 
