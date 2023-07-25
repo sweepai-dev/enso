@@ -21,6 +21,7 @@ import org.enso.interpreter.runtime.callable.function.Function
 import org.enso.interpreter.runtime.control.ThreadInterruptedException
 import org.enso.interpreter.runtime.error.{
   DataflowError,
+  PanicException,
   PanicSentinel,
   WarningsLibrary,
   WithWarnings
@@ -361,7 +362,7 @@ object ProgramExecutionSupport {
               .flatMap(_.expressionId)
           )
         case _ =>
-          val warnings =
+          val warningsOrPanic =
             Option.when(
               WarningsLibrary.getUncached.hasWarnings(value.getValue)
             ) {
@@ -376,30 +377,56 @@ object ProgramExecutionSupport {
                 } else {
                   None
                 }
-
-              Api.ExpressionUpdate.Payload.Value
-                .Warnings(
-                  warningsCount,
-                  warning,
-                  WarningsLibrary.getUncached.isLimitReached(value.getValue)
-                )
+              val panics = warnings.filter(w => {
+                w.getValue.isInstanceOf[PanicException]
+              })
+              if (panics.isEmpty) {
+                Api.ExpressionUpdate.Payload.Value
+                  .Warnings(
+                    warningsCount,
+                    warning,
+                    WarningsLibrary.getUncached.isLimitReached(value.getValue)
+                  )
+              } else {
+                val firstPanic =
+                  panics.head.getValue.asInstanceOf[PanicException]
+                Api.ExpressionUpdate.Payload
+                  .Panic(
+                    ctx.executionService.getExceptionMessage(firstPanic),
+                    ErrorResolver
+                      .getStackTrace(firstPanic)
+                      .flatMap(_.expressionId)
+                  )
+              }
             }
 
-          val schema = value.getValue match {
-            case function: Function =>
-              val functionInfo = FunctionPointer.fromFunction(function)
-              toMethodPointer(functionInfo).map { methodPointer =>
-                Api.FunctionSchema(
-                  methodPointer,
-                  FunctionPointer.collectNotAppliedArguments(function).toVector
-                )
-              }
+          if (
+            warningsOrPanic.isEmpty || warningsOrPanic.get
+              .isInstanceOf[Api.ExpressionUpdate.Payload.Value.Warnings]
+          ) {
+            val warnings = warningsOrPanic.map(v =>
+              v.asInstanceOf[Api.ExpressionUpdate.Payload.Value.Warnings]
+            )
+            val schema = value.getValue match {
+              case function: Function =>
+                val functionInfo = FunctionPointer.fromFunction(function)
+                toMethodPointer(functionInfo).map { methodPointer =>
+                  Api.FunctionSchema(
+                    methodPointer,
+                    FunctionPointer
+                      .collectNotAppliedArguments(function)
+                      .toVector
+                  )
+                }
 
-            case _ =>
-              None
+              case _ =>
+                None
+            }
+
+            Api.ExpressionUpdate.Payload.Value(warnings, schema)
+          } else {
+            warningsOrPanic.get.asInstanceOf[Api.ExpressionUpdate.Payload.Panic]
           }
-
-          Api.ExpressionUpdate.Payload.Value(warnings, schema)
       }
       ctx.endpoint.sendToClient(
         Api.Response(
