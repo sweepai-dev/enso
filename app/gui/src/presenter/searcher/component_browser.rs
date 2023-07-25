@@ -154,7 +154,7 @@ impl Model {
         });
         match new_code {
             Ok(text::Change { range, text }) => {
-                self.update_breadcrumbs();
+                // self.update_breadcrumbs();
                 Some((self.input_view, range, text.into()))
             }
             Err(err) => {
@@ -168,14 +168,13 @@ impl Model {
         self.controller.select_breadcrumb(id);
     }
 
-    fn update_breadcrumbs(&self) {
-        let entries = self.controller.breadcrumbs().into_iter();
+    fn update_breadcrumbs(&self, target_entry: component_grid::ElementId) {
+        // TODO[MM] construct breadcrumbs based on selected item;
         let browser = &self.view;
         // We only update the breadcrumbs starting from the second element because the first
         // one is reserved as a section name.
         let from = 1;
-        let breadcrumbs_from =
-            (entries.map(|entry| Breadcrumb::new(&entry.name(), entry.icon())).collect(), from);
+        let breadcrumbs_from = self.controller.breadcrumbs_for_entry(target_entry);
         browser.model().list.model().breadcrumbs.set_entries_from(breadcrumbs_from);
     }
 
@@ -216,9 +215,9 @@ impl Model {
             group.component_id?
         };
         self.controller.enter_module(&id);
-        self.update_breadcrumbs();
-        let show_ellipsis = self.controller.last_module_has_submodules();
-        self.show_breadcrumbs_ellipsis(show_ellipsis);
+        // self.update_breadcrumbs();
+        // let show_ellipsis = self.controller.last_module_has_submodules();
+        // self.show_breadcrumbs_ellipsis(show_ellipsis);
         Some(())
     }
 
@@ -274,6 +273,10 @@ impl Model {
 
     fn should_select_first_entry(&self) -> bool {
         self.controller.is_filtering() || self.controller.is_input_empty()
+    }
+
+    fn on_entry_for_docs_selected(&self, id: component_grid::ElementId) {
+        self.update_breadcrumbs(id);
     }
 }
 
@@ -414,18 +417,20 @@ impl ComponentBrowserSearcher {
             });
             documentation.frp.show_hovered_item_preview_caption <+ hovered_not_selected;
             docs_params <- all3(&action_list_changed, &grid.active, &grid.hovered);
-            docs <- docs_params.filter_map(f!([model]((_, selected, hovered)) {
-                let entry = hovered.as_ref().or(selected.as_ref());
-                entry.map(|entry| {
-                    if let Some(group_id) = entry.as_header() {
-                        model.documentation_of_group(group_id)
-                    } else {
-                        let entry_id = entry.as_entry_id().expect("GroupEntryId");
-                        model.documentation_of_component(entry_id)
-                    }
-                })
+            docs_entry <- docs_params.filter_map(f!([model]((_, selected, hovered)) {
+                hovered.as_ref().or(selected.as_ref()).cloned()
+            }));
+            docs <- docs_entry.map(f!([model](entry) {
+                if let Some(group_id) = entry.as_header() {
+                    model.documentation_of_group(group_id)
+                } else {
+                    let entry_id = entry.as_entry_id().expect("GroupEntryId");
+                    model.documentation_of_component(entry_id)
+                }
             }));
             documentation.frp.display_documentation <+ docs;
+            eval docs_entry ((entry) model.on_entry_for_docs_selected(*entry));
+
 
             eval_ grid.suggestion_accepted([]analytics::remote_log_event("component_browser::suggestion_accepted"));
             eval entry_selected((entry) model.suggestion_selected(*entry));

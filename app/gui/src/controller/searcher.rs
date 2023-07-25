@@ -512,7 +512,7 @@ impl Searcher {
     pub fn enter_module(&self, module: &component::Id) {
         let builder = breadcrumbs::Builder::new(&self.database, self.components());
         let breadcrumbs = builder.build(module);
-        self.breadcrumbs.set_content(breadcrumbs);
+        // self.breadcrumbs.set_content(breadcrumbs);
         self.notifier.notify(Notification::NewActionList);
     }
 
@@ -536,6 +536,19 @@ impl Searcher {
     pub fn select_breadcrumb(&self, id: usize) {
         self.breadcrumbs.select(id);
         self.notifier.notify(Notification::NewActionList);
+    }
+
+    pub fn breadcrumbs_for_entry(&self, id: EntryId) -> Vec<BreadcrumbEntry> {
+        // let mut breadcrumbs = Vec::new();
+        // let mut current_id = id;
+        // while let Some(parent_id) = self.database.parent_of(current_id) {
+        //     let entry = self.database.entry(parent_id);
+        //     breadcrumbs.push((current_id, entry).into());
+        //     current_id = parent_id;
+        // }
+        // breadcrumbs.reverse();
+        // breadcrumbs
+        unimplemented!()
     }
 
     /// Set the Searcher Input.
@@ -608,7 +621,7 @@ impl Searcher {
             inserted.input_change()
         };
         self.reload_list();
-        self.breadcrumbs.set_content(iter::empty());
+        // self.breadcrumbs.set_content(iter::empty());
         Ok(change)
     }
 
