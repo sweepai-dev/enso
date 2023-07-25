@@ -1,9 +1,12 @@
 package org.enso.interpreter.runtime.error;
 
 import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import org.enso.interpreter.runtime.EnsoContext;
 import org.enso.interpreter.runtime.library.dispatch.TypesLibrary;
 
 /**
@@ -13,6 +16,7 @@ import org.enso.interpreter.runtime.library.dispatch.TypesLibrary;
  * not function in textual mode.
  */
 @ExportLibrary(TypesLibrary.class)
+@ExportLibrary(WarningsLibrary.class)
 public class PanicSentinel extends AbstractTruffleException {
   final PanicException panic;
 
@@ -44,5 +48,26 @@ public class PanicSentinel extends AbstractTruffleException {
   @ExportMessage
   boolean hasSpecialDispatch() {
     return true;
+  }
+
+  @ExportMessage
+  final boolean hasWarnings() {
+    return true;
+  }
+
+  @ExportMessage
+  Warning[] getWarnings(Node location, @CachedLibrary("this") WarningsLibrary self) {
+    var ctx = EnsoContext.get(self);
+    return Warning.attach(ctx, panic, panic, location).getWarningsArray(null);
+  }
+
+  @ExportMessage
+  final boolean isLimitReached() {
+    return false;
+  }
+
+  @ExportMessage
+  final Object removeWarnings() throws UnsupportedMessageException {
+    return getPanic();
   }
 }
