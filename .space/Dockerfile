@@ -20,17 +20,6 @@ RUN set -ex -o pipefail && apt-get install -y \
     curl unzip wget socat man-db rsync moreutils vim lsof libssl-dev \
     # C/C++ \
     build-essential cmake g++ m4 \
-    # R \
-    r-base r-base-dev \
-    # JVM \
-    openjdk-8-jre-headless openjdk-11-jdk-headless openjdk-17-jdk-headless maven ant clojure scala \
-    # Python 3 \
-    python3-matplotlib python3-numpy python3-pip python3-scipy python3-pandas python3-dev pipenv \
-    # Python 2 \
-    python2-dev python-pip-whl \
-    && \
-    # Check Python \
-    python3 --version && python2 --version && pip3 --version && \
     # Rust \
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
