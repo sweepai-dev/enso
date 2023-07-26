@@ -58,19 +58,9 @@ impl ControllerComponentsProvider for component::List {
 
 // === ControllerComponentsProviderExt Helper Functions ===
 
-macro_rules! kind_to_icon {
-    ([ $( $variant:ident ),* ] $kind:ident) => {
-        {
-            use ensogl_icons::icon::Id;
-            use model::suggestion_database::entry::Kind;
-            match $kind {
-                $( Kind::$variant => Id::$variant, )*
-            }
-        }
-    }
-}
 
 fn component_to_entry_model(component: &component::Component) -> component_grid::EntryModel {
+    use enso_suggestion_database::kind_to_icon;
     let can_be_entered = component.can_be_entered();
     let match_info = &component.match_info;
     let caption = component.label();

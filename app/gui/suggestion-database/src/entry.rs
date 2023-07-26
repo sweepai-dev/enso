@@ -530,10 +530,13 @@ impl Entry {
 
 // === Other Properties ===
 
+/// Return the icon that should be used for given kind of entry.
+#[macro_export]
 macro_rules! kind_to_icon {
     ([ $( $variant:ident ),* ] $kind:ident) => {
         {
             use ensogl_icons::icon::Id;
+            use $crate::entry::Kind;
             match $kind {
                 $( Kind::$variant => Id::$variant, )*
             }
