@@ -50,27 +50,29 @@ public class TypeInferringParser extends DatatypeParser {
     }
 
     Context context = Context.getCurrent();
-    parsers:
     for (IncrementalDatatypeParser parser : baseParsers) {
       Builder builder = parser.makeBuilderWithCapacity(sourceStorage.size());
       var aggregator = new ProblemAggregatorImpl(columnName);
 
-      for (int i = 0; i < sourceStorage.size(); ++i) {
+      int i = 0;
+      while (i < sourceStorage.size() && !aggregator.hasProblems()) {
         String cell = sourceStorage.getItemBoxed(i);
         if (cell != null) {
           Object parsed = parser.parseSingleValue(cell, aggregator);
-          if (aggregator.hasProblems()) {
-            continue parsers;
+          if (!aggregator.hasProblems()) {
+            builder.appendNoGrow(parsed);
           }
-          builder.appendNoGrow(parsed);
         } else {
           builder.appendNoGrow(null);
         }
 
+        i++;
         context.safepoint();
       }
 
-      return new WithProblems<>(builder.seal(), aggregator.getAggregatedProblems());
+      if (!aggregator.hasProblems()) {
+        return new WithProblems<>(builder.seal(), aggregator.getAggregatedProblems());
+      }
     }
 
     return fallbackParser.parseColumn(columnName, sourceStorage);

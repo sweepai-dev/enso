@@ -173,7 +173,7 @@ public class NumberParser extends IncrementalDatatypeParser {
         int index = 0;
         var pattern = patternForIndex(index);
         while (pattern != null) {
-            var value = innerParseSingleValue(text, pattern);
+            var value = innerParseSingleValue(text, pattern, index);
             if (value != null) {
                 return value;
             }
@@ -195,7 +195,7 @@ public class NumberParser extends IncrementalDatatypeParser {
         int bestCount = -1;
         while (pattern != null) {
             Builder builder = makeBuilderWithCapacity(sourceStorage.size());
-            int failedAt = parseColumnWithPattern(pattern, sourceStorage, builder, null);
+            int failedAt = parseColumnWithPattern(pattern, index, sourceStorage, builder, null);
             if (failedAt == -1) {
                 return new WithProblems<>(builder.seal(), Collections.emptyList());
             }
@@ -211,18 +211,18 @@ public class NumberParser extends IncrementalDatatypeParser {
 
         Builder fallback = makeBuilderWithCapacity(sourceStorage.size());
         ProblemAggregator aggregator = new ProblemAggregatorImpl(columnName);
-        parseColumnWithPattern(patternForIndex(bestIndex), sourceStorage, fallback, aggregator);
+        parseColumnWithPattern(patternForIndex(bestIndex), bestIndex, sourceStorage, fallback, aggregator);
         return new WithProblems<>(fallback.seal(), aggregator.getAggregatedProblems());
     }
 
-    private int parseColumnWithPattern(Pattern pattern, Storage<String> sourceStorage, Builder builder, ProblemAggregator aggregator) {
+    private int parseColumnWithPattern(Pattern pattern, int index, Storage<String> sourceStorage, Builder builder, ProblemAggregator aggregator) {
         Context context = Context.getCurrent();
         for (int i = 0; i < sourceStorage.size(); i++) {
             var text = sourceStorage.getItemBoxed(i);
             if (text == null) {
                 builder.appendNulls(1);
             } else {
-                var value = innerParseSingleValue(text, pattern);
+                var value = innerParseSingleValue(text, pattern, index);
                 if (value != null) {
                     builder.appendNoGrow(value);
                 } else {
@@ -247,7 +247,7 @@ public class NumberParser extends IncrementalDatatypeParser {
                 : NumericBuilder.createLongBuilder(capacity);
     }
 
-    private Object innerParseSingleValue(String text, Pattern pattern) {
+    private Object innerParseSingleValue(String text, Pattern pattern, int index) {
         if (allowDecimal) {
             var trimmed = trimValues ? text.trim() : text;
             if (trimmed.equals("NaN")) {
@@ -259,6 +259,12 @@ public class NumberParser extends IncrementalDatatypeParser {
             if (trimmed.equals("-Infinity")) {
                 return Double.NEGATIVE_INFINITY;
             }
+
+            if (index == 0) {
+                return null;
+            }
+        } else if (index == 0) {
+            return fastLongValue(text);
         }
 
         var parsed = pattern.matcher(text);
@@ -303,5 +309,55 @@ public class NumberParser extends IncrementalDatatypeParser {
         } catch (NumberFormatException e) {
             throw new IllegalStateException("Java parse failed to parse number: " + text, e);
         }
+    }
+
+    private static long MAX_ALLOWED_LONG = Long.MAX_VALUE / 10;
+
+    private static int SkipWhiteSpace(String text, int idx, int length) {
+        while (idx < length && Character.isWhitespace(text.charAt(idx))) {
+            idx++;
+        }
+        return idx;
+    }
+
+    private Long fastLongValue(String text) {
+        if (text == null || text.isEmpty()) {
+            return null;
+        }
+
+        int length = text.length();
+        int idx = this.trimValues ? SkipWhiteSpace(text, 0, length) : 0;
+        if (idx == length) {
+            return null;
+        }
+
+        boolean negative = text.charAt(idx) == '-';
+        if (negative) {
+            idx++;
+        }
+        if (idx == length) {
+            return null;
+        }
+
+        long accum = 0;
+        while (idx < length && Character.isWhitespace(text.charAt(idx))) {
+            char c = text.charAt(idx++);
+            if (c < '0' || c > '9') {
+                return null;
+            }
+
+            int digit = c - '0';
+            if (accum > MAX_ALLOWED_LONG) {
+                return null;
+            }
+            accum *= 10;
+            if (accum > Long.MAX_VALUE - digit) {
+                return null;
+            }
+            accum += digit;
+        }
+
+        idx = this.trimValues ? SkipWhiteSpace(text, idx, length) : idx;
+        return idx == length ? (negative ? -accum : accum) : null;
     }
 }
