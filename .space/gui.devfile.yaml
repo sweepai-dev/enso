@@ -1,0 +1,28 @@
+schemaVersion: 2.2.0
+metadata:
+  name: 'My Enso dev env configuration'
+attributes:
+  space:
+    # regular, large, xlarge
+    instanceType: xlarge
+    # a default IDE for the project
+    editor:
+      # (Required) IDE type: Idea, WebStorm, PyCharm,
+      # RubyMine, CLion, Fleet, GoLand, PhpStorm
+      type: Clion
+      version: '2023.2'
+      # Space uses JetBrains Toolbox App to install IDEs to a dev environment.
+      # updateChannel defines IDE version release stage: Release, EAP
+      updateChannel: EAP
+      # JVM configuration (appends to the default .vmoptions file)
+      vmoptions:
+        - '-Xms8192m'
+        - '-Xmx16384m'
+components:
+  - name: image-build
+    image:
+      # (Required)
+      imageName: enso-image:latest
+      dockerfile:
+        # (Required) path to Dockerfile relative to projectRoot
+        uri: .space/Dockerfile
