@@ -20,7 +20,6 @@ import org.enso.table.util.NameDeduplicator;
 import org.graalvm.polyglot.Context;
 
 import java.io.Reader;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -466,7 +465,6 @@ public class DelimitedReader {
    */
   public WithProblems<Table> read(Reader input) {
     markUsed();
-    System.out.println(LocalDateTime.now());
     Context context = Context.getCurrent();
     try {
       parser.beginParsing(input);
@@ -490,7 +488,6 @@ public class DelimitedReader {
       // That is to ensure that the other thread that is used for reading is also stopped quickly.
       parser.stopParsing();
     }
-    System.out.println(LocalDateTime.now());
 
     Column[] columns = new Column[builders.length];
     for (int i = 0; i < builders.length; i++) {
@@ -507,7 +504,6 @@ public class DelimitedReader {
       context.safepoint();
     }
 
-    System.out.println(LocalDateTime.now());
     return new WithProblems<>(new Table(columns), getReportedProblems(headerProblems));
   }
 

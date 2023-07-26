@@ -234,6 +234,10 @@ type Data_Formatter
             Error.throw (Illegal_Argument.Error "Unsupported value type: "+value_type.to_display_text)
 
     ## PRIVATE
+    get_base_type_parsers self =
+        [NumberParser.createFastOnlyParser False self.trim_values, NumberParser.createFastOnlyParser True self.trim_values, self.make_date_time_parser, self.make_date_parser, self.make_time_of_day_parser, self.make_boolean_parser]
+
+    ## PRIVATE
     get_specific_type_parsers self =
         [self.make_integer_parser True, self.make_decimal_parser True, self.make_date_time_parser, self.make_date_parser, self.make_time_of_day_parser, self.make_boolean_parser]
 

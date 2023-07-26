@@ -46,17 +46,20 @@ public class NumberParser extends IncrementalDatatypeParser {
 
     private final static Map<String, Pattern> PATTERNS = new HashMap<>();
 
-    private static Pattern getPattern(boolean allowDecimal, boolean allowCurrency, boolean allowScientific, boolean trimValues, int index) {
-        int allowedSet = (allowCurrency ? ALLOWED_CCY_PATTERNS : ALLOWED_NON_CCY_PATTERNS);
-        int separatorsIndex = index / allowedSet;
-        int patternIndex = index % allowedSet;
+    private static Pattern getPattern(boolean allowDecimal, int allowedPatterns, boolean allowScientific, boolean trimValues, int index) {
+        if (allowedPatterns == 0) {
+            return  null;
+        }
+
+        int separatorsIndex = index / allowedPatterns;
+        int patternIndex = index % allowedPatterns;
 
         if (separatorsIndex >= SEPARATORS.length) {
             return null;
         }
 
         var separators = SEPARATORS[separatorsIndex];
-        return getPattern(allowDecimal, allowCurrency, allowScientific, trimValues, patternIndex, separators);
+        return getPattern(allowDecimal, allowedPatterns, allowScientific, trimValues, patternIndex, separators);
     }
 
     /** The number of patterns that are allowed for non-currency numbers. */
@@ -65,12 +68,12 @@ public class NumberParser extends IncrementalDatatypeParser {
     /** The number of patterns that are allowed for currency numbers. */
     private static final int ALLOWED_CCY_PATTERNS = 6;
 
-    private static Pattern getPattern(boolean allowDecimal, boolean allowCurrency, boolean allowScientific, boolean trimValues, int patternIndex, String separators) {
+    private static Pattern getPattern(boolean allowDecimal, int allowedPatterns, boolean allowScientific, boolean trimValues, int patternIndex, String separators) {
         if (allowScientific && !allowDecimal) {
             throw new IllegalArgumentException("Scientific notation requires decimal numbers.");
         }
 
-        if (patternIndex >= (allowCurrency ? ALLOWED_CCY_PATTERNS : ALLOWED_NON_CCY_PATTERNS)) {
+        if (patternIndex >= allowedPatterns) {
             return null;
         }
 
@@ -97,7 +100,7 @@ public class NumberParser extends IncrementalDatatypeParser {
     }
 
     private final boolean allowDecimal;
-    private final boolean allowCurrency;
+    private final int allowedPatterns;
     private final boolean allowLeadingZeros;
     private final boolean allowScientific;
     private final boolean trimValues;
@@ -113,7 +116,12 @@ public class NumberParser extends IncrementalDatatypeParser {
      */
     public static NumberParser createIntegerParser(boolean allowCurrency, boolean allowLeadingZeros, boolean trimValues, String thousandSeparator) {
         var separator = thousandSeparator == null ? null : (thousandSeparator + '_');
-        return new NumberParser(false, allowCurrency, allowLeadingZeros, trimValues, false, separator);
+        var allowedPatterns = allowCurrency ? ALLOWED_CCY_PATTERNS : ALLOWED_NON_CCY_PATTERNS;
+        return new NumberParser(false, allowedPatterns, allowLeadingZeros, trimValues, false, separator);
+    }
+
+    public  static  NumberParser createFastOnlyParser(boolean allowDecimal, boolean trimValues) {
+        return new NumberParser(allowDecimal, 0, false, trimValues, false, null);
     }
 
     /**
@@ -125,7 +133,8 @@ public class NumberParser extends IncrementalDatatypeParser {
      * @param allowScientific whether to allow scientific notation
      */
     public static NumberParser createAutoDecimalParser(boolean allowCurrency, boolean allowLeadingZeros, boolean trimValues, boolean allowScientific) {
-        return new NumberParser(true, allowCurrency, allowLeadingZeros, trimValues, allowScientific, null);
+        var allowedPatterns = allowCurrency ? ALLOWED_CCY_PATTERNS : ALLOWED_NON_CCY_PATTERNS;
+        return new NumberParser(true, allowedPatterns, allowLeadingZeros, trimValues, allowScientific, null);
     }
 
     /**
@@ -144,12 +153,14 @@ public class NumberParser extends IncrementalDatatypeParser {
         }
 
         thousandSeparator = thousandSeparator == null ? "" : thousandSeparator;
-        return new NumberParser(true, allowCurrency, allowLeadingZeros, trimValues, allowScientific, thousandSeparator + decimalSeparator);
+
+        var allowedPatterns = allowCurrency ? ALLOWED_CCY_PATTERNS : ALLOWED_NON_CCY_PATTERNS;
+        return new NumberParser(true, allowedPatterns, allowLeadingZeros, trimValues, allowScientific, thousandSeparator + decimalSeparator);
     }
 
-    private NumberParser(boolean allowDecimal, boolean allowCurrency, boolean allowLeadingZeros, boolean trimValues, boolean allowScientific, String separators) {
+    private NumberParser(boolean allowDecimal, int allowedPatterns, boolean allowLeadingZeros, boolean trimValues, boolean allowScientific, String separators) {
         this.allowDecimal = allowDecimal;
-        this.allowCurrency = allowCurrency;
+        this.allowedPatterns = allowedPatterns;
         this.allowLeadingZeros = allowLeadingZeros;
         this.trimValues = trimValues;
         this.allowScientific = allowScientific;
@@ -163,9 +174,13 @@ public class NumberParser extends IncrementalDatatypeParser {
      * the given parser.
      */
     private Pattern patternForIndex(int index) {
+        if (index == 0) {
+            return PATTERNS.computeIfAbsent("^.*$", Pattern::compile);
+        }
+
         return separators == null
-            ? getPattern(allowDecimal, allowCurrency, allowScientific, trimValues, index)
-            : getPattern(allowDecimal, allowCurrency, allowScientific, trimValues, index, separators);
+            ? getPattern(allowDecimal, allowedPatterns, allowScientific, trimValues, index-1)
+            : getPattern(allowDecimal, allowedPatterns, allowScientific, trimValues, index-1, separators);
     }
 
     @Override
@@ -261,7 +276,11 @@ public class NumberParser extends IncrementalDatatypeParser {
             }
 
             if (index == 0) {
-                return null;
+                try {
+                    return Double.parseDouble(trimmed);
+                } catch (NumberFormatException e) {
+                    return null;
+                }
             }
         } else if (index == 0) {
             return fastLongValue(text);
@@ -311,8 +330,6 @@ public class NumberParser extends IncrementalDatatypeParser {
         }
     }
 
-    private static long MAX_ALLOWED_LONG = Long.MAX_VALUE / 10;
-
     private static int SkipWhiteSpace(String text, int idx, int length) {
         while (idx < length && Character.isWhitespace(text.charAt(idx))) {
             idx++;
@@ -320,6 +337,15 @@ public class NumberParser extends IncrementalDatatypeParser {
         return idx;
     }
 
+    private static long MAX_ALLOWED_LONG = Long.MAX_VALUE / 10;
+
+    /**
+     * Parses a long value from the given text.
+     * Very simple and direct and avoids throwing exceptions.
+     *
+     * @param text the text to parse
+     * @return the parsed value or null if the text is not a valid long
+     */
     private Long fastLongValue(String text) {
         if (text == null || text.isEmpty()) {
             return null;
