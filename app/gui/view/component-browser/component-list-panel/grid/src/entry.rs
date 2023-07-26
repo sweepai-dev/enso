@@ -18,10 +18,7 @@ use ensogl_core::display::scene::Layer;
 use ensogl_core::display::shape::StyleWatchFrp;
 use ensogl_grid_view as grid_view;
 use ensogl_grid_view::entry::Contour;
-use ensogl_grid_view::entry::MovedHeaderPosition;
-use ensogl_hardcoded_theme::application::component_browser::component_list_panel::grid::entry as theme;
 use ensogl_icons::icon;
-use ensogl_shadow as shadow;
 use ensogl_text as text;
 
 

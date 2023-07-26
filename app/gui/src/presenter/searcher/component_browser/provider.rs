@@ -58,59 +58,16 @@ impl ControllerComponentsProvider for component::List {
 
 // === ControllerComponentsProviderExt Helper Functions ===
 
-
-fn collect_all_groups_info(
-    favorites: component::group::List,
-    top_modules: controller::searcher::TopModules,
-) -> Vec<component_grid::content::Group> {
-    use controller::searcher::TopModules;
-    let popular_section =
-        group_list_to_grid_group_infos(component_grid::SectionId::Popular, &favorites);
-    match top_modules {
-        TopModules::All(modules) => {
-            let submodules = modules.iter().enumerate().flat_map(|(section, list)| {
-                group_list_to_grid_group_infos(component_grid::SectionId::Namespace(section), list)
-            });
-            popular_section.chain(submodules).collect()
-        }
-        TopModules::Subset(list, section) => {
-            let submodules = group_list_to_grid_group_infos(
-                component_grid::SectionId::Namespace(section),
-                &list,
-            );
-            popular_section.chain(submodules).collect()
+macro_rules! kind_to_icon {
+    ([ $( $variant:ident ),* ] $kind:ident) => {
+        {
+            use ensogl_icons::icon::Id;
+            use model::suggestion_database::entry::Kind;
+            match $kind {
+                $( Kind::$variant => Id::$variant, )*
+            }
         }
     }
-}
-
-fn group_list_to_grid_group_infos(
-    section: component_grid::SectionId,
-    list: &component::group::List,
-) -> impl Iterator<Item = component_grid::content::Group> + '_ {
-    list.iter().enumerate().map(move |(index, group)| {
-        let id = component_grid::GroupId { section, index };
-        controller_group_to_grid_group_info(id, group)
-    })
-}
-
-fn controller_group_to_grid_group_info(
-    id: component_grid::GroupId,
-    group: &component::Group,
-) -> component_grid::content::Group {
-    component_grid::content::Group {
-        id,
-        height: group.matched_items.get(),
-        original_height: group.len(),
-        color: group.color,
-        best_match_score: group.best_match_score.get(),
-    }
-}
-
-fn group_to_header_model(
-    group: &component::Group,
-    can_be_entered: bool,
-) -> component_grid::HeaderModel {
-    component_grid::HeaderModel { caption: group.name.clone_ref(), can_be_entered }
 }
 
 fn component_to_entry_model(component: &component::Component) -> component_grid::EntryModel {
@@ -119,7 +76,14 @@ fn component_to_entry_model(component: &component::Component) -> component_grid:
     let caption = component.label();
     let highlighted = bytes_of_matched_letters(match_info, &caption);
     let icon = match &component.suggestion {
-        component::Suggestion::FromDatabase { entry, .. } => entry.icon(),
+        component::Suggestion::FromDatabase { entry, .. } => {
+            let kind = entry.kind;
+            let icon_name = entry.icon_name.as_ref();
+            let icon = icon_name.and_then(|n| n.to_pascal_case().parse().ok());
+            icon.unwrap_or_else(|| {
+                enso_suggestion_database::for_each_kind_variant!(kind_to_icon(kind))
+            })
+        }
         component::Suggestion::Virtual { snippet } => snippet.icon,
     };
     component_grid::EntryModel {

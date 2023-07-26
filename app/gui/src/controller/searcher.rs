@@ -31,7 +31,6 @@ pub mod component;
 pub mod input;
 
 use crate::controller::searcher::breadcrumbs::BreadcrumbEntry;
-pub use action::Action;
 
 
 // =================
